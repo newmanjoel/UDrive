@@ -8,7 +8,7 @@ The format for sending information to the UDrive motor controller will always be
 Sending
 
 | Mode | Description | Data Type | Data Description |
-| --   | --          | --                |                  |
+| --   | --          | --                |    --              |
 | "M" | Manual Speed for both motors | float x 2 | speed of the motor where 0 is full reverse and 255 is full forward |
 | "V" | Velocity Mode using encoders, Same speed for both motors (enables PID) | float x 2 | rpm for both motors |
 | "E" | Enable/Disable PID | Bool | 0 = Disable, 1 = Enable |

@@ -70,7 +70,7 @@ class UDrive():
         if(self.write_flag):
             self.write_data(self.arduino_input)
             self.write_flag = False
-            # debug_window.debug_output("sending: |{}|".format(local_send))
+            # debug_window.debug_output("sending: |{}|".format(arduino_input))
             # print colored("sending: |{}|".format(local_send), color="green")
 
     def stop(self):
@@ -364,7 +364,11 @@ class MainScreen(QtGui.QMainWindow):
         ''' This is called every time the stop button is pressed '''
         debug_window.debug_output("Stop Button Pressed")
         mc.stop()
-        self.start_pause_callback()
+        mc.send_enable = False
+        self.start_button.setText("Start")
+        self.start_button.setToolTip("Start Streaming data to the micro controller")
+
+
 
     def reset_callback(self):
         debug_window.debug_output("Reset Button Pressed")
