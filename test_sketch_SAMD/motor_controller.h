@@ -39,6 +39,7 @@ class Motor {
     int Output();
     void SetSoftLimits(int lower_bound, int upper_bound);
     void SetPIDGains(double new_kp, double new_ki, double new_kd);
+    void SetWheelSize(double new_wheel_size);
     double GetPGain();
     double GetIGain();
     double GetDGain();
@@ -56,9 +57,11 @@ class Motor {
     int _pwm_pin, _dir_pin; // Pins that we use
     volatile int _enc_1_pin, _enc_2_pin;
     volatile int count, last_count, last_last_count;
+    long _total_count;
     int sample_time; // how fast the PID should sample
     double _setpoint, _input, _output; // used for PID
     double this_time, last_time;
+    double _wheel_size;
     double _kp, _ki, _kd; // used for PID
     double _lower_soft_limit, _upper_soft_limit; // used for soft limits
     int _lower_absolute_limit, _upper_absolute_limit; // used for mapping voltage into angle

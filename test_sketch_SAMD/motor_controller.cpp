@@ -2,19 +2,19 @@
 #include "Arduino.h"
 #include "PID_v1.h"
 /*
-Motor::Motor(){
+  Motor::Motor(){
     // empty constructor
-}
+  }
 
-void Motor::begin(int pin){
+  void Motor::begin(int pin){
     _pin = pin;
     _encoder_a = 0;
     _encoder_b = 0;
     _encoder_enable = false;
     pinMode(_pin, OUTPUT);
-}
+  }
 
-void Motor::begin(int pin, int encoder_a, int encoder_b){
+  void Motor::begin(int pin, int encoder_a, int encoder_b){
     _pin = pin;
     _encoder_a = encoder_a;
     _encoder_b = encoder_b;
@@ -22,15 +22,15 @@ void Motor::begin(int pin, int encoder_a, int encoder_b){
     pinMode(_pin, OUTPUT);
     pinMode(_encoder_a, INPUT);
     pinMode(_encoder_b, INPUT);
-}
+  }
 
-void Motor::speed(int speed){
+  void Motor::speed(int speed){
     analogWrite(_pin, speed);
-}
+  }
 
-void Motor::go_speed(int speed){
+  void Motor::go_speed(int speed){
 
-}
+  }
 */
 
 /*
@@ -65,7 +65,7 @@ void Motor::begin(int pwm_pin, int dir_pin, int enc_1, int enc_2)
   pinMode(_dir_pin, OUTPUT);
   pinMode(_enc_1_pin, INPUT_PULLUP);
   pinMode(_enc_2_pin, INPUT_PULLUP);
- 
+
 
   /*
     kp, ki, kd stand for Proportional gain, Integral Gain, and Derivative gain
@@ -82,6 +82,7 @@ void Motor::begin(int pwm_pin, int dir_pin, int enc_1, int enc_2)
   _output = 0;
   _setpoint = 0;
   last_count = 0;
+  _total_count = 0;
   // _pid.SetSampleTime(1); // this is untested
   _pid = new PID(&_input, &_output, &_setpoint, _kp, _ki, _kd, P_ON_E, DIRECT);
   sample_time = 50;
@@ -92,22 +93,22 @@ void Motor::begin(int pwm_pin, int dir_pin, int enc_1, int enc_2)
   output_channel->init();
 }
 
-void Motor::isrA(){
-    if(digitalRead(_enc_1_pin) != digitalRead(_enc_2_pin)){
-        count++;
-    }
-    else{
-        count--;
-    }
+void Motor::isrA() {
+  if (digitalRead(_enc_1_pin) != digitalRead(_enc_2_pin)) {
+    count++;
+  }
+  else {
+    count--;
+  }
 }
 
-void Motor::isrB(){
-    if(digitalRead(_enc_1_pin) == digitalRead(_enc_2_pin)){
-        count++;
-    }
-    else{
-        count--;
-    }
+void Motor::isrB() {
+  if (digitalRead(_enc_1_pin) == digitalRead(_enc_2_pin)) {
+    count++;
+  }
+  else {
+    count--;
+  }
 }
 
 /*
@@ -177,12 +178,12 @@ bool Motor::PidEnabled()
 */
 void Motor::Feedback()
 {
-    noInterrupts();
-    this_time = millis();
-    _input = (count);
-    _input *= 60.0/(1296*sample_time*0.001); // (tics/0.1sec) * (1 rev / 1296 tics) * (60s/ 1 min) = rpm
-    last_time = this_time;
-    interrupts();
+  noInterrupts();
+  this_time = millis();
+  _input = (count);
+  _input *= 60.0 / (1296 * sample_time * 0.001); // (tics/0.1sec) * (1 rev / 1296 tics) * (60s/ 1 min) = rpm
+  last_time = this_time;
+  interrupts();
 }
 
 
@@ -214,8 +215,8 @@ int Motor::Output()
   */
   _output = constrain(_output, -255, 255);
   //_output = abs(_output) > 80 ? _output : 0;
-  output_channel->setValue(my_map(abs(_output),0,255,0,output_channel->getMaxValue()));
-  
+  output_channel->setValue(my_map(abs(_output), 0, 255, 0, output_channel->getMaxValue()));
+
 
   /*
      This block sets the default direction for the linear actuator.
@@ -226,15 +227,16 @@ int Motor::Output()
 
   if (_output > 0) {
     digitalWrite(_dir_pin, 1);
-    digitalWrite(6,0);
+    digitalWrite(6, 0);
   }
   else {
     digitalWrite(_dir_pin, 0);
-    digitalWrite(6,1);
+    digitalWrite(6, 1);
   }
-  if(pid_computed == 1){
+  if (pid_computed == 1) {
     last_last_count = last_count;
     last_count = count;
+    _total_count += count;
     count = 0;
   }
   return pid_computed;
@@ -256,6 +258,11 @@ void Motor::SetPIDGains(double new_kp, double new_ki, double new_kd)
   _ki = new_ki;
   _kd = new_kd;
   _pid->SetTunings(_kp, _ki, _kd);
+}
+
+void Motor::SetWheelSize(double new_wheel_size)
+{
+  _wheel_size = new_wheel_size;
 }
 /*
    BELOW THIS POINT IS ALL GETTERS

@@ -68,18 +68,43 @@ void serialEvent() {
     }
     stringComplete = true;
     String first = toSend.substring(0, 1);
-    if (first.equals("S")) {
-      m.SetSetpoint(toSend.substring(1).toFloat());
+    if (first.equals("V")) {
+      int first_comma = toSend.indexOf(',', 1);
+      m.SetSetpoint(toSend.substring(1, first_comma).toFloat());
+      m.EnablePID();
     }
     else if (first.equals("P")) {
       int first_comma = toSend.indexOf(',', 1);
       int second_comma = toSend.indexOf(',', first_comma + 1);
-      double kp = (double) toSend.substring(1,first_comma).toFloat();
-      double ki = (double) toSend.substring(first_comma+1,second_comma).toFloat();
-      double kd = (double) toSend.substring(second_comma+1).toFloat();
-      m.SetPIDGains(kp,ki,kd);
+      double kp = (double) toSend.substring(1, first_comma).toFloat();
+      double ki = (double) toSend.substring(first_comma + 1, second_comma).toFloat();
+      double kd = (double) toSend.substring(second_comma + 1).toFloat();
+      m.SetPIDGains(kp, ki, kd);
     }
-
+    else if (first.equals("M")) {
+      int first_comma = toSend.indexOf(',', 1);
+      m.Manual((double) toSend.substring(1, first_comma).toFloat());
+    }
+    else if (first.equals("E")) {
+      bool local_enable = false;
+      local_enable = (bool) toSend.substring(1, 2);
+      if (local_enable) {
+        m.EnablePID();
+      }
+      else {
+        m.DisablePID();
+      }
+    }
+    else if (first.equals("D")){
+      m.SetWheelSize((double) toSend.substring(1).toFloat());
+    }
+    else if(first.equals("T")){
+      // set the ticks per rev
+    }
+    else if(first.equals("A")){
+      // set the max acceleration
+    }
+    
 
   }
 }

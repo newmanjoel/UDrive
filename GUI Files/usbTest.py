@@ -19,6 +19,8 @@ import time
 import socket
 import threading
 
+from struct import pack, unpack, calcsize
+
 
 base_time = time.time()
 setpoint_data = np.array([0.0, 0.0])
@@ -30,6 +32,47 @@ write_flag = False
 data_size = 1000
 
 arduino_input = ""
+
+class UDrive():
+    '''
+    This class is the commands that you can send to the UDrive motor driver
+
+    '''
+
+    def __init__(self,ser):
+        '''
+        motor information can be found [here](https://www.robotshop.com/ca/en/12v-313rpm-4166oz-in-hd-premium-planetary-gearmotor-encoder.html)
+
+        '''
+        self.rpm = 0
+        self.manual_speed_1 = 0
+        self.manual_speed_2 = 0
+        self.velocity_speed_1 = 0
+        self.velocity_speed_2 = 0
+        self.pid_en = 0
+        self.pid_values = [1,10,0]
+        self.wheel_diam = 0.01 #10 cm
+        self.ticks_per_rev = 1296
+        self.mode_to_send = 0
+        self.data_to_send = 0
+        self.uC = ser
+        self.debug_print = True
+
+    def send_data(self):
+        local_mode = -1
+        local_data = 0
+        local_send = ''
+        if self.mode_to_send == 0:
+            local_mode = 0
+            local_data = self.manual_speed_1
+            local_send = pack('bb', local_mode, local_data)
+
+        if self.debug_print:
+            print colored("sending: |{}|".format(local_send), color="green")
+
+
+
+
 
 
 
@@ -81,20 +124,48 @@ class MainScreen(QtGui.QMainWindow):
         self.worker = Worker()
         self.worker.signals.result.connect(self.print_output)
         self.threadpool.start(self.worker)
+
+        # start of all of the connected objects
+
+        # Speed Tab
         self.setpoint_button.clicked.connect(self.send_setpoint)
+        self.setpoint_spinner.valueChanged.connect(self.send_setpoint_with_value)
+        self.manual_spinner.valueChanged.connect(self.send_manual_with_value)
+
+        # PID Tab
         self.pid_button.clicked.connect(self.send_pid)
+
+        # I/O tab
+
 
     def closeEvent(self,event):
         global run_flag
         run_flag = False
         event.accept()
 
+    def adjust_kp_slider(self):
+        self.kp_spinner_min.value()
+
     def send_setpoint(self):
         global write_flag, arduino_input
+        self.send_text_box.append("Trying to send the value of {} to the USB".format(self.setpoint_spinner.value()))
         print "Trying to send the value of {} to the USB".format(self.setpoint_spinner.value())
-        arduino_input = "S{} ".format(self.setpoint_spinner.value())
+        arduino_input = "V{} ".format(self.setpoint_spinner.value())
         write_flag = True
 
+    def send_setpoint_with_value(self, value):
+        global write_flag, arduino_input
+        if(self.auto_send_speed.isChecked()):
+            print "Trying to send the value of {} to the USB".format(self.setpoint_spinner.value())
+            arduino_input = "V{} ".format(self.setpoint_spinner.value())
+            write_flag = True
+
+    def send_manual_with_value(self, value):
+        global write_flag, arduino_input
+        if(self.auto_send_speed.isChecked()):
+            print "Trying to send the value of {} to the USB".format(self.setpoint_spinner.value())
+            arduino_input = "M{},{} ".format(self.setpoint_spinner.value(),self.setpoint_spinner.value())
+            write_flag = True
 
     def print_output(self, s):
         global setpoint_data
@@ -128,8 +199,8 @@ class MainScreen(QtGui.QMainWindow):
 
         except SyntaxError:
             print colored("-> {} -> ".format(s), "green")
-
-        print colored("-> {}".format(s), "green")
+            self.recv_text_box.append("-> {}".format(s))
+        #print colored("-> {}".format(s), "green")
 
 
 
@@ -180,6 +251,9 @@ try:
     form = MainScreen()  # We set the form to be our ExampleApp (design)
     form.show()  # Show the form
     app.exec_()  # and execute the app
+    #mc = UDrive(ser)
+    #mc.manual_speed_1 = 100
+    #mc.send_data()
 finally:
     ser.close()
     print colored("arduino closed", 'magenta')
