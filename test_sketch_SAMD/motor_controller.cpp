@@ -1,37 +1,6 @@
 #include "motor_controller.h"
 #include "Arduino.h"
 #include "PID_v1.h"
-/*
-  Motor::Motor(){
-    // empty constructor
-  }
-
-  void Motor::begin(int pin){
-    _pin = pin;
-    _encoder_a = 0;
-    _encoder_b = 0;
-    _encoder_enable = false;
-    pinMode(_pin, OUTPUT);
-  }
-
-  void Motor::begin(int pin, int encoder_a, int encoder_b){
-    _pin = pin;
-    _encoder_a = encoder_a;
-    _encoder_b = encoder_b;
-    _encoder_enable = true;
-    pinMode(_pin, OUTPUT);
-    pinMode(_encoder_a, INPUT);
-    pinMode(_encoder_b, INPUT);
-  }
-
-  void Motor::speed(int speed){
-    analogWrite(_pin, speed);
-  }
-
-  void Motor::go_speed(int speed){
-
-  }
-*/
 
 /*
   This mapping function is the same as the arduino map function as outlined

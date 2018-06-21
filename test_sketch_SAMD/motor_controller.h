@@ -3,23 +3,6 @@
 #include "PID_v1.h"
 #include "Arduino.h"
 #include <DimmerZero.h>
-/*
-  class Motor{
-    public:
-        Motor();
-        void begin(int pin);
-        void begin(int pin, int encoder_a, int encoder_b);
-        void speed(int speed);
-        void go_speed(int speed);
-
-    private:
-        int _pin;
-        int _encoder_a;
-        int _encoder_b;
-        bool _encoder_enable;
-
-  };
-*/
 
 class Motor {
   public:
