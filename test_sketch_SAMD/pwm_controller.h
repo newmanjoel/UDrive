@@ -24,3 +24,4 @@ class pwm_controller {
     volatile int pwm_freq;
     volatile int* duty_cycles;
   };
+  #endif
