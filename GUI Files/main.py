@@ -78,6 +78,10 @@ class UDrive():
         self.write_data("M0,0")
         self.send_enable = False
 
+    def update(self):
+        self.send()
+        return self.read_data()
+
     def read_data(self):
         if(self.uC is not None):
             return self.uC.readline().strip()
@@ -136,8 +140,7 @@ class Worker(QtCore.QRunnable):
         '''
         try:
             while run_flag:
-                mc.send()
-                read_byte = mc.read_data()
+                read_byte = mc.update()
                 if(read_byte is not None):
                     self.signals.result.emit(read_byte)
         except Exception as e:
@@ -156,7 +159,7 @@ class DebugScreen(QtGui.QWidget):
 
     def limit_output(self, additional_text=""):
         '''
-        This is where the amount of text in the debug window is limited
+        This is where the amount of text in the debug window is limited and addes a new line
         '''
         plain_text = self.debug_output_textbox.toPlainText()
         plain_text += additional_text+"\n"
@@ -405,7 +408,6 @@ class MainScreen(QtGui.QMainWindow):
                     else:
                         setpoint_data = np.roll(setpoint_data, -1)
                         setpoint_data[-1] = split_csv[i]
-
                 elif(i == 2):
                     if(len(setpoint_data) < data_size):
                         output_data = np.append(output_data, split_csv[i])
@@ -417,7 +419,6 @@ class MainScreen(QtGui.QMainWindow):
             # print colored("-> {} -> ".format(s), "green")
             debug_window.debug_output("-> {}".format(s))
         #print colored("-> {}".format(s), "green")
-
 
     def displayGraph(self):
         global setpoint_data
@@ -432,16 +433,12 @@ class MainScreen(QtGui.QMainWindow):
                                  np.linspace(0, 10, len(setpoint_data), endpoint=True) , setpoint_data, 'r--'  # red dashed line
                                  )
 
-
         ''' labels are nice to have '''
         self.mplwidget.axes.set_xlabel("time")
         self.mplwidget.axes.set_ylabel("arbartary scale")
 
         ''' redraw the graph to display the new graph '''
         self.mplwidget.draw()
-
-
-
 
 try:
     # print colored("trying to conect to the arduino", 'magenta')
