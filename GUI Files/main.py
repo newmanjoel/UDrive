@@ -27,6 +27,7 @@ base_time = time.time()
 setpoint_data = np.array([0.0, 0.0])
 output_data = np.array([0.0, 0.0])
 input_data = np.array([0.0, 0.0])
+current_data = np.array([0.0, 0.0])
 xdata = np.array([0.0, 1.0])
 run_flag = True
 write_flag = False
@@ -76,7 +77,7 @@ class UDrive():
     def stop(self):
         self.send_enable = True
         self.write_data("M0,0")
-        self.send_enable = False
+        #self.send_enable = False
 
     def update(self):
         self.send()
@@ -377,8 +378,8 @@ class MainScreen(QtGui.QMainWindow):
         debug_window.debug_output("Reset Button Pressed")
 
     def send_velocity(self):
-        value_1 = self.motor_1_spinner.value()
-        value_2 = self.motor_2_spinner.value()
+        value_1 = self.motor_1_spinner.value()*2
+        value_2 = self.motor_2_spinner.value()*2
         mc.velocity(value_1, value_2)
 
     def send_manual(self):
@@ -391,6 +392,7 @@ class MainScreen(QtGui.QMainWindow):
         global output_data
         global input_data
         global data_size
+        global current_data
 
         try:
             split_csv = s.split(",")
@@ -414,6 +416,14 @@ class MainScreen(QtGui.QMainWindow):
                     else:
                         output_data = np.roll(output_data, -1)
                         output_data[-1] = split_csv[i]
+                elif(i == 3):
+                    if(len(setpoint_data) < data_size):
+                        current_data = np.append(current_data, split_csv[i])
+                    else:
+                        current_data = np.roll(current_data, -1)
+                        current_data[-1] = split_csv[i]
+                        self.motor_1_power_bar.setValue(int(abs(np.average(current_data)-self.power_offset_spinner.value())*20.526*12))
+                        self.label_2.setText("Motor 1 :{}".format(abs(np.average(current_data)-self.power_offset_spinner.value())*12*self.doubleSpinBox.value()))
 
         except SyntaxError:
             # print colored("-> {} -> ".format(s), "green")
@@ -424,6 +434,7 @@ class MainScreen(QtGui.QMainWindow):
         global setpoint_data
         global output_data
         global input_data
+        global current_data
         global xdata
 
         ''' plot the data! '''
@@ -439,6 +450,8 @@ class MainScreen(QtGui.QMainWindow):
 
         ''' redraw the graph to display the new graph '''
         self.mplwidget.draw()
+
+
 
 try:
     # print colored("trying to conect to the arduino", 'magenta')

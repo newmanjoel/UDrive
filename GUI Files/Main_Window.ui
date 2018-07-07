@@ -97,7 +97,40 @@
           <item>
            <widget class="QLabel" name="label_4">
             <property name="text">
-             <string>TextLabel</string>
+             <string>Power offset</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="power_offset_spinner">
+            <property name="minimum">
+             <double>-10.000000000000000</double>
+            </property>
+            <property name="maximum">
+             <double>10.000000000000000</double>
+            </property>
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+            <property name="value">
+             <double>1.680000000000000</double>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_5">
+            <property name="text">
+             <string>current multiplication factor</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QDoubleSpinBox" name="doubleSpinBox">
+            <property name="singleStep">
+             <double>0.010000000000000</double>
+            </property>
+            <property name="value">
+             <double>6.000000000000000</double>
             </property>
            </widget>
           </item>
@@ -212,8 +245,11 @@
              </item>
              <item row="3" column="1">
               <widget class="QProgressBar" name="motor_1_power_bar">
+               <property name="maximum">
+                <number>20</number>
+               </property>
                <property name="value">
-                <number>24</number>
+                <number>5</number>
                </property>
                <property name="textVisible">
                 <bool>true</bool>
@@ -247,9 +283,6 @@
            </widget>
           </item>
          </layout>
-         <zorder>groupBox</zorder>
-         <zorder>frame_3</zorder>
-         <zorder>frame_4</zorder>
         </widget>
        </item>
       </layout>

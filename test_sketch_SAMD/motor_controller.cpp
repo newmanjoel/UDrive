@@ -119,6 +119,10 @@ void Motor::SetSetpoint(int new_setpoint)
 void Motor::EnablePID()
 {
   _pid->SetMode(AUTOMATIC);
+  last_last_count = last_count;
+  last_count = count;
+  _total_count += count;
+  count = 0;
 }
 /*
   Turning off the PID, This will force the motor to stop and be set to manual mode

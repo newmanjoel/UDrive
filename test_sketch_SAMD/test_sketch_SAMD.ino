@@ -22,6 +22,7 @@ void setup() {
   time = millis();
   motor_time = millis();
   pinMode(6, OUTPUT);
+  pinMode(A0, INPUT);
   m.EnablePID();
   m.SetSetpoint(-50);
 }
@@ -46,11 +47,19 @@ void loop() {
   }
 
   if (millis() - time > 1) {
+    double offset = 0;
+    double voltage = 0;
+    voltage = (double) analogRead(A0);
+    double temp = voltage*3.3/1000 - offset;
+    
     SerialUSB.print(m.GetRawInput());
     SerialUSB.print(",");
     SerialUSB.print(m.GetSetpoint());
     SerialUSB.print(",");
-    SerialUSB.println(m.GetOutput());
+    SerialUSB.print(m.GetOutput());
+    SerialUSB.print(",");
+    SerialUSB.println(temp);
+    
 
     time = millis();
   }
@@ -83,7 +92,8 @@ void serialEvent() {
     }
     else if (first.equals("M")) {
       int first_comma = toSend.indexOf(',', 1);
-      m.Manual((double) toSend.substring(1, first_comma).toFloat());
+      double manual_speed = (double) toSend.substring(1, first_comma).toFloat();
+      m.Manual(manual_speed);
     }
     else if (first.equals("E")) {
       bool local_enable = false;
@@ -95,16 +105,16 @@ void serialEvent() {
         m.DisablePID();
       }
     }
-    else if (first.equals("D")){
+    else if (first.equals("D")) {
       m.SetWheelSize((double) toSend.substring(1).toFloat());
     }
-    else if(first.equals("T")){
+    else if (first.equals("T")) {
       // set the ticks per rev
     }
-    else if(first.equals("A")){
+    else if (first.equals("A")) {
       // set the max acceleration
     }
-    
+
 
   }
 }
