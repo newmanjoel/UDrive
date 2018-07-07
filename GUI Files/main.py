@@ -55,7 +55,7 @@ class UDrive():
         self.velocity_speed_1 = 0
         self.velocity_speed_2 = 0
         self.pid_en = 0
-        self.pid_values = [1, 10, 0]
+        self.pid_values = [1, 10, 0] #kp, ki, kd
         self.wheel_diam = 0.01  # 10 cm
         self.ticks_per_rev = 1296
         self.mode_to_send = 0
@@ -149,6 +149,15 @@ class Worker(QtCore.QRunnable):
         except Exception as e:
             print e
 
+class TestScreen(QtGui.QWidget):
+    def __init__(self): #THIS IS SUPER IMPORTANT
+        super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
+        uic.loadUi('test_popup.ui', self) #THIS IS WHERE YOU LOAD THE .UI FILE
+        self.horizontalSlider.valueChanged.connect(self.slider_changed)
+
+    def slider_changed(self):
+        self.label.setText("{}".format(self.horizontalSlider.value()))
+        print "{}".format(self.horizontalSlider.value())
 
 class DebugScreen(QtGui.QWidget):
     def __init__(self):
@@ -212,14 +221,14 @@ class SerialScreen(QtGui.QWidget):
 
 
 class MainScreen(QtGui.QMainWindow):
-    def __init__(self):
+    def __init__(self): #THIS IS SUPER IMPORTANT
         global debug_window
         '''
         This is the main screen that the user interacts with.
 
         '''
-        super(self.__class__, self).__init__()
-        uic.loadUi('Main_Window.ui', self)
+        super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
+        uic.loadUi('Main_Window.ui', self) #THIS IS WHERE YOU LOAD THE .UI FILE
         timer = QtCore.QTimer(self)
         timer.timeout.connect(self.displayGraph)
         timer.start(500)
@@ -464,13 +473,15 @@ try:
     except serial.serialutil.SerialException:
         print colored("Could not connect to an arduino, working in offline mode", "red")
     mc = UDrive(ser)
-    app = QtGui.QApplication(sys.argv)
+    app = QtGui.QApplication(sys.argv) # this is important
     debug_window = DebugScreen()
     serial_window = SerialScreen()
-    form = MainScreen()
+    test_screen = TestScreen()
+    form = MainScreen() #this is important
 
-    form.show()
-    app.exec_()
+    form.show() #this is important
+    test_screen.show()
+    app.exec_() #this is important
 finally:
     if(mc.uC is not None):
         mc.uC.close()
