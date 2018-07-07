@@ -3,6 +3,8 @@
 Created on Mon Jun 04 17:55:33 2018
 
 @author: joell
+
+Lines 214-270 are all the code for connecting the GUI to the code
 """
 
 import json
