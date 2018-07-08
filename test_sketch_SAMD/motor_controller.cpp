@@ -9,12 +9,13 @@
 */
 double my_map(double x, double in_min, double in_max, double out_min, double out_max)
 {
+  x = constrain(x, -in_max, in_max);
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-Motor::Motor(int pwm_pin, int dir_pin, int enc_1, int enc_2)
+Motor::Motor(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
 {
-  begin(pwm_pin, dir_pin, enc_1, enc_2);
+  begin(pwm_pin_1, pwm_pin_2, enc_1, enc_2);
 }
 
 Motor::Motor()
@@ -23,15 +24,15 @@ Motor::Motor()
   // for use with begin
 }
 
-void Motor::begin(int pwm_pin, int dir_pin, int enc_1, int enc_2)
+void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
 {
   // setting up the pins
-  _pwm_pin = pwm_pin;
-  _dir_pin = dir_pin;
+  _pwm_pin_a = pwm_pin_1;
+  _pwm_pin_b = pwm_pin_2;
   _enc_1_pin = enc_1;
   _enc_2_pin = enc_2;
-  pinMode(_pwm_pin, OUTPUT);
-  pinMode(_dir_pin, OUTPUT);
+  pinMode(_pwm_pin_a, OUTPUT);
+  pinMode(_pwm_pin_b, OUTPUT);
   pinMode(_enc_1_pin, INPUT_PULLUP);
   pinMode(_enc_2_pin, INPUT_PULLUP);
 
@@ -56,10 +57,13 @@ void Motor::begin(int pwm_pin, int dir_pin, int enc_1, int enc_2)
   _pid = new PID(&_input, &_output, &_setpoint, _kp, _ki, _kd, P_ON_E, DIRECT);
   sample_time = 50;
   _pid->SetSampleTime(sample_time);
-  SetOutputLimits(-255, 255);
+  output_channel_a = new DimmerZero(_pwm_pin_a);
+  output_channel_a->init();
+  output_channel_b = new DimmerZero(_pwm_pin_b);
+  output_channel_b->init();
+  SetOutputLimits(-100, 100);
 
-  output_channel = new DimmerZero(_pwm_pin);
-  output_channel->init();
+
 }
 
 void Motor::isrA() {
@@ -88,7 +92,7 @@ void Motor::isrB() {
 void Motor::Manual(double speed)
 {
   _pid->SetMode(MANUAL);
-  _output = speed;
+  _output = my_map(speed, -100, 100, -100, 100);
   Output();
 }
 
@@ -186,10 +190,22 @@ int Motor::Output()
     With our linear actuators if we have a output of less than 80 they dont move
     and just make a bad noise. This just adds a bit of protection for our ears.
   */
-  _output = constrain(_output, -255, 255);
-  //_output = abs(_output) > 80 ? _output : 0;
-  output_channel->setValue(my_map(abs(_output), 0, 255, 0, output_channel->getMaxValue()));
-
+  if (_output > 0) {
+    output_channel_a->setValue(
+      my_map(abs(_output), 0, 100, 0, output_channel_a->getMaxValue())
+    );
+    output_channel_b->setValue(
+      0
+    );
+  }
+  else {
+    output_channel_a->setValue(
+      0
+    );
+    output_channel_b->setValue(
+      my_map(abs(_output), 0, 100, 0, output_channel_b->getMaxValue())
+    );
+  }
 
   /*
      This block sets the default direction for the linear actuator.
@@ -198,14 +214,6 @@ int Motor::Output()
      _output>0 ? digitalWrite(_dir_pin,1) : digitalWrite(_dir_pin,0);
   */
 
-  if (_output > 0) {
-    digitalWrite(_dir_pin, 1);
-    digitalWrite(6, 0);
-  }
-  else {
-    digitalWrite(_dir_pin, 0);
-    digitalWrite(6, 1);
-  }
   if (pid_computed == 1) {
     last_last_count = last_count;
     last_count = count;

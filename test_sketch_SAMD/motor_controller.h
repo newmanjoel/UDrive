@@ -37,7 +37,7 @@ class Motor {
 
   private:
     void SetOutputLimits(int lower_bound, int upper_bound);
-    int _pwm_pin, _dir_pin; // Pins that we use
+    int _pwm_pin_a, _pwm_pin_b; // Pins that we use
     volatile int _enc_1_pin, _enc_2_pin;
     volatile int count, last_count, last_last_count;
     long _total_count;
@@ -50,7 +50,8 @@ class Motor {
     int _lower_absolute_limit, _upper_absolute_limit; // used for mapping voltage into angle
     int _lower_actual_angle, _upper_actual_angle; // used for mapping voltage into angle
     PID* _pid; // is the PID
-    DimmerZero* output_channel; // cant use  analogWrite with the new uC
+    DimmerZero* output_channel_a; // cant use  analogWrite with the new uC
+    DimmerZero* output_channel_b; // cant use  analogWrite with the new uC
 };
 
 

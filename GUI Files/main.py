@@ -389,8 +389,8 @@ class MainScreen(QtGui.QMainWindow):
         debug_window.debug_output("Reset Button Pressed")
 
     def send_velocity(self):
-        value_1 = self.motor_1_spinner.value()*2
-        value_2 = self.motor_2_spinner.value()*2
+        value_1 = self.motor_1_spinner.value()
+        value_2 = self.motor_2_spinner.value()
         mc.velocity(value_1, value_2)
 
     def send_manual(self):
@@ -468,7 +468,7 @@ try:
     # print colored("trying to conect to the arduino", 'magenta')
     ser = None
     try:
-        ser = serial.Serial('COM231', 9600, timeout=None)
+        ser = serial.Serial('COM21', 9600, timeout=None)
         print colored("connected to the arduino", 'magenta')
     except serial.serialutil.SerialException:
         print colored("Could not connect to an arduino, working in offline mode", "red")
@@ -476,11 +476,9 @@ try:
     app = QtGui.QApplication(sys.argv) # this is important
     debug_window = DebugScreen()
     serial_window = SerialScreen()
-    test_screen = TestScreen()
     form = MainScreen() #this is important
 
     form.show() #this is important
-    test_screen.show()
     app.exec_() #this is important
 finally:
     if(mc.uC is not None):

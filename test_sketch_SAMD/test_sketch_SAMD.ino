@@ -16,13 +16,13 @@ void setup() {
   // Send a welcome message to the serial monitor:
   SerialUSB.println("Send character(s) to relay it over Serial1");
 
-  m.begin(2, 3, 7, 5);
+  m.begin(2, 5, 7, 5);
   attachInterrupt(digitalPinToInterrupt(7), isr_m1_a, CHANGE);
-  attachInterrupt(digitalPinToInterrupt(5), isr_m1_b, CHANGE);
+  //attachInterrupt(digitalPinToInterrupt(5), isr_m1_b, CHANGE);
   time = millis();
   motor_time = millis();
-  pinMode(6, OUTPUT);
-  pinMode(A0, INPUT);
+  //pinMode(6, OUTPUT);
+  //pinMode(A0, INPUT);
   m.EnablePID();
   m.SetSetpoint(-50);
 }
