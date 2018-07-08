@@ -22,12 +22,12 @@ import time
 import socket
 import threading
 
-from struct import pack, unpack, calcsize
 
 
 base_time = time.time()
 setpoint_data = np.array([0.0, 0.0])
-output_data = np.array([0.0, 0.0])
+m1_output_data = np.array([0.0, 0.0])
+m1_output_data = np.array([0.0, 0.0])
 input_data = np.array([0.0, 0.0])
 current_data = np.array([0.0, 0.0])
 xdata = np.array([0.0, 1.0])
@@ -400,7 +400,7 @@ class MainScreen(QtGui.QMainWindow):
 
     def print_output(self, s):
         global setpoint_data
-        global output_data
+        global m1_output_data
         global input_data
         global data_size
         global current_data
@@ -423,10 +423,10 @@ class MainScreen(QtGui.QMainWindow):
                         setpoint_data[-1] = split_csv[i]
                 elif(i == 2):
                     if(len(setpoint_data) < data_size):
-                        output_data = np.append(output_data, split_csv[i])
+                        m1_output_data = np.append(m1_output_data, split_csv[i])
                     else:
-                        output_data = np.roll(output_data, -1)
-                        output_data[-1] = split_csv[i]
+                        m1_output_data = np.roll(m1_output_data, -1)
+                        m1_output_data[-1] = split_csv[i]
                 elif(i == 3):
                     if(len(setpoint_data) < data_size):
                         current_data = np.append(current_data, split_csv[i])
@@ -443,7 +443,7 @@ class MainScreen(QtGui.QMainWindow):
 
     def displayGraph(self):
         global setpoint_data
-        global output_data
+        global m1_output_data
         global input_data
         global current_data
         global xdata
@@ -451,7 +451,7 @@ class MainScreen(QtGui.QMainWindow):
         ''' plot the data! '''
 
         self.mplwidget.axes.plot(np.linspace(0, 10, len(input_data), endpoint=True), input_data, 'b-',  # blue solid line
-                                 np.linspace(0, 10, len(output_data), endpoint=True) , output_data, 'g:',  # green dotted line
+                                 np.linspace(0, 10, len(m1_output_data), endpoint=True) , m1_output_data, 'g:',  # green dotted line
                                  np.linspace(0, 10, len(setpoint_data), endpoint=True) , setpoint_data, 'r--'  # red dashed line
                                  )
 

@@ -13,6 +13,7 @@ unsigned long time;
 unsigned long motor_time;
 
 Motor m1;
+Motor m2;
 DRV8704 mc;
 // DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
 
@@ -26,18 +27,18 @@ void setup() {
   m1.begin(2, 5, 7, 5);
   m2.begin(6, 7, 7, 5);
   mc.begin(SLAVESELECT);
-  attachInterrupt(digitalPinToInterrupt(7), isr_m1_a, CHANGE);
+  mc.set_enable(true);// untested
+  //attachInterrupt(digitalPinToInterrupt(7), isr_m1_a, CHANGE);
   //attachInterrupt(digitalPinToInterrupt(5), isr_m1_b, CHANGE);
   motor_time = time= millis();
   m1.EnablePID();
   m1.SetSetpoint(0);
+  m2.EnablePID();
+  m2.SetSetpoint(0);
   pinMode(3, OUTPUT);
   digitalWrite(3, false); // this is the reset pin
   pinMode(4, OUTPUT);
   digitalWrite(4, true); // this is the sleep pin // leave this pin alone
-  pinMode(DATAOUT, OUTPUT);
-  pinMode(DATAIN, INPUT);
-  pinMode(SPICLOCK, OUTPUT);
   pinMode(SLAVESELECT, OUTPUT);
   delay(10);
 }
@@ -81,6 +82,7 @@ void loop() {
     SerialUSB.print(m2.GetOutput());
     SerialUSB.print(",");
     SerialUSB.println(m1_current);
+    //mc.read_status();
 
     time = millis();
   }

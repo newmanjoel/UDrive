@@ -18,7 +18,7 @@ DRV8704_Settings DRV8704::get_settings(){
 }
 
 void DRV8704::default_settings(){
-    settings.torque = 0xFF;
+    settings.torque = 0x32; // 0xff is the max
     settings.enabled = ENABLE;
     settings.current_gain = GAIN_40;
     settings.dead_time = DEAD_410;
@@ -158,16 +158,16 @@ void DRV8704::write_register_16(int address, int data){
     address = address&0b0111;
     data_to_send |= address<<12; // the next three bits are address
     data_to_send |= data&0x0FFF; // the remaining bits are data
-    digitalWrite(settings.chip_select_pin,LOW);
-    SPI.transfer16(data_to_send);
     digitalWrite(settings.chip_select_pin,HIGH);
+    SPI.transfer16(data_to_send);
+    digitalWrite(settings.chip_select_pin,LOW);
 }
 int DRV8704::read_register_16(int address){
     static int data_received = 0x0000;
     data_received = 0x0000;
     address = address&0b0111;
-    digitalWrite(settings.chip_select_pin,LOW);
-    data_received = SPI.transfer16(address|0b1000); // make sure bit 1 is a one
     digitalWrite(settings.chip_select_pin,HIGH);
+    data_received = SPI.transfer16(address|0b1000); // make sure bit 1 is a one
+    digitalWrite(settings.chip_select_pin,LOW);
     return data_received;
 }
