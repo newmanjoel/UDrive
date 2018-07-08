@@ -23,6 +23,7 @@ class Motor {
     void SetSoftLimits(int lower_bound, int upper_bound);
     void SetPIDGains(double new_kp, double new_ki, double new_kd);
     void SetWheelSize(double new_wheel_size);
+    double GetWheelSize();
     double GetPGain();
     double GetIGain();
     double GetDGain();

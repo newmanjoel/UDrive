@@ -248,6 +248,9 @@ void Motor::SetWheelSize(double new_wheel_size)
 /*
    BELOW THIS POINT IS ALL GETTERS
 */
+double Motor::GetWheelSize(){
+  return _wheel_size;
+}
 double Motor::GetPGain()
 {
   return _kp;
