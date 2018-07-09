@@ -28,6 +28,7 @@ void setup() {
   m2.begin(6, 7, 7, 5);
   mc.begin(SLAVESELECT);
   mc.set_enable(true);// untested
+  
   //attachInterrupt(digitalPinToInterrupt(7), isr_m1_a, CHANGE);
   //attachInterrupt(digitalPinToInterrupt(5), isr_m1_b, CHANGE);
   motor_time = time= millis();

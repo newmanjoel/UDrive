@@ -18,7 +18,7 @@ DRV8704_Settings DRV8704::get_settings(){
 }
 
 void DRV8704::default_settings(){
-    settings.torque = 0x32; // 0xff is the max
+    settings.torque = 0xFF; // 0xff is the max
     settings.enabled = ENABLE;
     settings.current_gain = GAIN_40;
     settings.dead_time = DEAD_410;
