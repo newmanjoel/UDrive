@@ -147,6 +147,9 @@ void serialEvent() {
     else if (first.equals("A")) {
       // set the max acceleration
     }
+    else if (first.equals("S"){
+      // for sending settings for the DRV8704
+    }
 
 
   }

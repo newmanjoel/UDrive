@@ -4,13 +4,13 @@ Created on Sun Jul 08 17:05:20 2018
 
 @author: joell
 """
-from PyQt4 import QtCore, QtGui, uic  # Import the PyQt4 module we'll need
-from PyQt4.QtCore import *
+from g_settings import *
 
-class MC_Settings(QtGui.QWidget):
+class MCD_Settings(QtGui.QWidget):
     def __init__(self): #THIS IS SUPER IMPORTANT
         super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
         uic.loadUi('Motor_Driver_Settings.ui', self) #THIS IS WHERE YOU LOAD THE .UI FILE
+        global mc, debug_window
 
         # CTRL TAB
 
@@ -32,11 +32,13 @@ class MC_Settings(QtGui.QWidget):
         self.reset_button.clicked.connect(self.reset_all_values)
         self.send_button.clicked.connect(self.send_all_values)
 
+        print "starting up the MC"
+
     def calculate_i_chop(self):
         torque = self.spinBox.value()
         gain_index = self.comboBox_2.currentIndex()
         gain = 0
-        if(gain_index==0):
+        if(gain_index == 0):
             gain = 5
         elif(gain_index == 1):
             gain = 10
@@ -44,7 +46,7 @@ class MC_Settings(QtGui.QWidget):
             gain = 20
         elif(gain_index == 3):
             gain = 40
-        self.label_6.setText("I = {:.2}".format((2.75*torque)/(256*gain*0.0075)))
+        self.label_6.setText("I = {:.4}".format((2.75*torque)/(256.0*gain*0.0075)))
 
     def fixed_time_off(self):
         t_off = self.spinBox_2.value()
@@ -78,9 +80,10 @@ class MC_Settings(QtGui.QWidget):
         self.comboBox_19.setCurrentIndex(2)
         self.comboBox_9.setCurrentIndex(3)
         self.comboBox_10.setCurrentIndex(3)
+        debug_window.debug_output("Resetting all of the values")
 
     def send_all_values(self):
-        print "SENDING ALL OF THE VALUES"
+        debug_window.debug_output( "SENDING ALL OF THE VALUES")
 
 
 if (__name__ == "__main__"):

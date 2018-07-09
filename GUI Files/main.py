@@ -7,222 +7,30 @@ Created on Mon Jun 04 17:55:33 2018
 Lines 214-270 are all the code for connecting the GUI to the code
 """
 
-import json
-counting = 0
-import serial
-import serial.tools.list_ports as list_ports
-from termcolor import colored
-
 
 from PyQt4 import QtCore, QtGui, uic  # Import the PyQt4 module we'll need
 from PyQt4.QtCore import *
 import sys  # We need sys so that we can pass argv to QApplication
-import numpy as np
-import time
-import socket
-import threading
+
+app = QtGui.QApplication(sys.argv) # this is important needs to be before the g_settings
+
+from g_settings import * # all the global variables
 
 
 
-base_time = time.time()
-setpoint_data = np.array([0.0, 0.0])
-m1_output_data = np.array([0.0, 0.0])
-m1_output_data = np.array([0.0, 0.0])
-input_data = np.array([0.0, 0.0])
-current_data = np.array([0.0, 0.0])
-xdata = np.array([0.0, 1.0])
-run_flag = True
-write_flag = False
-data_size = 1000
-
-arduino_input = ""
-
-class UDrive():
-    '''
-    This class is the commands that you can send to the UDrive motor driver
-
-    '''
-
-    def __init__(self,ser):
-        global debug_window
-        '''
-        motor information can be found [here](https://www.robotshop.com/ca/en/12v-313rpm-4166oz-in-hd-premium-planetary-gearmotor-encoder.html)
-
-        '''
-        self.rpm = 0
-        self.manual_speed_1 = 0
-        self.manual_speed_2 = 0
-        self.velocity_speed_1 = 0
-        self.velocity_speed_2 = 0
-        self.pid_en = 0
-        self.pid_values = [1, 10, 0] #kp, ki, kd
-        self.wheel_diam = 0.01  # 10 cm
-        self.ticks_per_rev = 1296
-        self.mode_to_send = 0
-        self.data_to_send = 0
-        self.uC = ser
-        self.debug_print = True
-        self.reverse_1 = False
-        self.reverse_2 = False
-        self.send_enable = False
-
-        self.arduino_input = ""
-        self.write_flag = False
-
-    def send(self):
-        if(self.write_flag):
-            self.write_data(self.arduino_input)
-            self.write_flag = False
-            # debug_window.debug_output("sending: |{}|".format(arduino_input))
-            # print colored("sending: |{}|".format(local_send), color="green")
-
-    def stop(self):
-        self.send_enable = True
-        self.write_data("M0,0")
-        #self.send_enable = False
-
-    def update(self):
-        self.send()
-        return self.read_data()
-
-    def read_data(self):
-        if(self.uC is not None):
-            return self.uC.readline().strip()
-        return None
-
-    def write_data(self, what_to_write=""):
-        if(self.uC is not None and self.send_enable):
-            self.uC.write(what_to_write)
-
-    def manual(self, value_1, value_2):
-        if(self.reverse_1):
-            value_1 = -value_1
-        if(self.reverse_2):
-            value_2 = -value_2
-        self.arduino_input = "M{},{} ".format(value_1, value_2)
-        self.write_flag = True
-
-    def velocity(self, value_1, value_2):
-        if(self.reverse_1):
-            value_1 = -value_1
-        if(self.reverse_2):
-            value_2 = -value_2
-        # print "V{},{}".format(value_1, value_2)
-        self.arduino_input = "V{},{} ".format(value_1, value_2)
-        self.write_flag = True
-
-    def send_pid(self):
-        self.arduino_input = "P{},{},{} ".format(
-                                            self.pid_values[0],
-                                            self.pid_values[1],
-                                            self.pid_values[2]
-                                            )
-        self.write_flag = True
+#from Motor_Driver_Settings import MC_Settings
+#
+#from UDrive_program import UDrive
+#from Debug_program import DebugScreen
 
 
-class WorkerSignals(QObject):
-    result = pyqtSignal(str)
 
-
-class Worker(QtCore.QRunnable):
-    '''
-    WORKER THREAD
-    '''
-    def __init__(self, *args, **kwargs):
-        super(Worker, self).__init__()
-        # Store constructor arguments (re-used for processing)
-        self.args = args
-        self.kwargs = kwargs
-        self.signals = WorkerSignals()
-
-    @pyqtSlot()
-    def run(self):
-        global run_flag, mc
-        '''
-        This is the loop that polls the USB
-        '''
-        try:
-            while run_flag:
-                read_byte = mc.update()
-                if(read_byte is not None):
-                    self.signals.result.emit(read_byte)
-        except Exception as e:
-            print e
-
-class TestScreen(QtGui.QWidget):
-    def __init__(self): #THIS IS SUPER IMPORTANT
-        super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
-        uic.loadUi('test_popup.ui', self) #THIS IS WHERE YOU LOAD THE .UI FILE
-        self.horizontalSlider.valueChanged.connect(self.slider_changed)
-
-    def slider_changed(self):
-        self.label.setText("{}".format(self.horizontalSlider.value()))
-        print "{}".format(self.horizontalSlider.value())
-
-class DebugScreen(QtGui.QWidget):
-    def __init__(self):
-        '''
-        This is the Debug screen that the user interacts with.
-
-        '''
-        super(self.__class__, self).__init__()
-        uic.loadUi('Debug_Window.ui', self)
-        self.Max_length = 500
-
-    def limit_output(self, additional_text=""):
-        '''
-        This is where the amount of text in the debug window is limited and addes a new line
-        '''
-        plain_text = self.debug_output_textbox.toPlainText()
-        plain_text += additional_text+"\n"
-        return plain_text[-self.Max_length:]
-
-    def debug_output(self, what_to_display):
-        '''
-        This essentially limits the size, adds a newline, and moves the cursor to the end
-        '''
-        what_to_display = self.limit_output(what_to_display)
-        self.debug_output_textbox.setPlainText(what_to_display)
-        self.debug_output_textbox.moveCursor(QtGui.QTextCursor.End)
-
-
-class SerialScreen(QtGui.QWidget):
-    def __init__(self):
-        '''
-        This is the serial selector screen that the user interacts with.
-
-        '''
-        super(self.__class__, self).__init__()
-        uic.loadUi('Serial_Port_Selector.ui', self)
-        self.getComms()
-        self.pushButton_2.clicked.connect(self.ok_callback)
-        self.pushButton.clicked.connect(self.time_to_close)
-
-    def getComms(self):
-        # print "Getting all of the available ports"
-        self.ports = list(list_ports.comports())
-        for (port, name, PID) in self.ports:
-            # print "Testing {} which is port: {}".format(name, port)
-            self.comboBox.addItem("{} -> {}".format(name, port))
-
-    def ok_callback(self):
-        global mc
-        try:
-            print "trying to connect to {}".format(self.ports[self.comboBox.currentIndex()][0])
-            ser = serial.Serial(self.ports[self.comboBox.currentIndex()][0],9600,timeout=None)
-            mc.uC = ser
-            print colored("connected to the arduino", 'magenta')
-            self.time_to_close()
-        except serial.serialutil.SerialException:
-            print colored("Could not connect to the selected Port", "red")
-
-    def time_to_close(self):
-        self.close()
 
 
 class MainScreen(QtGui.QMainWindow):
     def __init__(self): #THIS IS SUPER IMPORTANT
         global debug_window
+        from usbWorker import Worker
         '''
         This is the main screen that the user interacts with.
 
@@ -233,11 +41,10 @@ class MainScreen(QtGui.QMainWindow):
         timer.timeout.connect(self.displayGraph)
         timer.start(500)
         self.threadpool = QtCore.QThreadPool()
-        print "I can start threads on {} threads".format(self.threadpool.maxThreadCount())
+
         self.worker = Worker()
         self.worker.signals.result.connect(self.print_output)
         self.threadpool.start(self.worker)
-
         self.toggle_powerbar_callback()
 
         # File Menus
@@ -259,9 +66,14 @@ class MainScreen(QtGui.QMainWindow):
         debug_action.setStatusTip("Show the Debug window")
         debug_action.triggered.connect(self.show_debug_callback)
 
+        mcd_action = QtGui.QAction("&Motor Driver Settings", self)
+        mcd_action.setStatusTip("Configure the DRV8704 Settings")
+        mcd_action.triggered.connect(self.show_mcd_callback)
+
         config_menu = main_menu.addMenu("&Config")
         config_menu.addAction(power_action)
         config_menu.addAction(debug_action)
+        config_menu.addAction(mcd_action)
         # start of all of the connected objects
 
         # status
@@ -277,6 +89,7 @@ class MainScreen(QtGui.QMainWindow):
         self.comboBox.currentIndexChanged.connect(self.combobox_callback)
         self.motor_1_fwd_rev.clicked.connect(self.motor_1_fwd_rev_callback)
         self.motor_2_fwd_rev.clicked.connect(self.motor_2_fwd_rev_callback)
+        debug_window.debug_output("starting up the main window")
 
     def closeEvent(self, event):
         global run_flag
@@ -285,6 +98,10 @@ class MainScreen(QtGui.QMainWindow):
         serial_window.close()
         self.close()
         event.accept()
+
+    def show_mcd_callback(self):
+        debug_window.debug_output("showing the mcd window")
+        mcd_window.show()
 
     def show_debug_callback(self):
         debug_window.debug_output("showing the debug window")
@@ -465,17 +282,12 @@ class MainScreen(QtGui.QMainWindow):
 
 
 try:
-    # print colored("trying to conect to the arduino", 'magenta')
-    ser = None
-    try:
-        ser = serial.Serial('COM21', 9600, timeout=None)
-        print colored("connected to the arduino", 'magenta')
-    except serial.serialutil.SerialException:
-        print colored("Could not connect to an arduino, working in offline mode", "red")
-    mc = UDrive(ser)
-    app = QtGui.QApplication(sys.argv) # this is important
-    debug_window = DebugScreen()
-    serial_window = SerialScreen()
+    global ser, mc, debug_window, serial_window, form
+    debug_window.debug_output("trying to start the mc")
+    # mc = UDrive(ser)
+
+    #debug_window = DebugScreen()
+    #serial_window = SerialScreen()
     form = MainScreen() #this is important
 
     form.show() #this is important
