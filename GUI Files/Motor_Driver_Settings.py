@@ -83,7 +83,9 @@ class MCD_Settings(QtGui.QWidget):
         debug_window.debug_output("Resetting all of the values")
 
     def send_all_values(self):
-        debug_window.debug_output( "SENDING ALL OF THE VALUES")
+        from g_settings import debug_window, mc
+        debug_window.debug_output("SENDING ALL OF THE VALUES")
+        mc.write_data("S")
 
 
 if (__name__ == "__main__"):
@@ -92,4 +94,3 @@ if (__name__ == "__main__"):
     form = MC_Settings()  # We set the form to be our ExampleApp (design)
     form.show()  # Show the form
     app.exec_()  # and execute the app
-

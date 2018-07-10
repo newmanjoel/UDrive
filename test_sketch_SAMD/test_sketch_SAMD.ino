@@ -15,7 +15,7 @@ unsigned long motor_time;
 Motor m1;
 Motor m2;
 DRV8704 mc;
-// DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
+DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
 
 void setup() {
   SerialUSB.begin(9600); // Initialize Serial Monitor USB
@@ -42,6 +42,8 @@ void setup() {
   digitalWrite(4, true); // this is the sleep pin // leave this pin alone
   pinMode(SLAVESELECT, OUTPUT);
   delay(10);
+
+  mc_settings = mc.get_settings();
 }
 
 void isr_m1_a() {
@@ -147,8 +149,10 @@ void serialEvent() {
     else if (first.equals("A")) {
       // set the max acceleration
     }
-    else if (first.equals("S"){
+    else if (first.equals("S")){
       // for sending settings for the DRV8704
+      mc.reset_STATUS();
+      mc.set_settings(mc_settings);
     }
 
 

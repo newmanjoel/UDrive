@@ -16,17 +16,6 @@ app = QtGui.QApplication(sys.argv) # this is important needs to be before the g_
 
 from g_settings import * # all the global variables
 
-
-
-#from Motor_Driver_Settings import MC_Settings
-#
-#from UDrive_program import UDrive
-#from Debug_program import DebugScreen
-
-
-
-
-
 class MainScreen(QtGui.QMainWindow):
     def __init__(self): #THIS IS SUPER IMPORTANT
         global debug_window
