@@ -33,8 +33,8 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
   _enc_2_pin = enc_2;
   pinMode(_pwm_pin_a, OUTPUT);
   pinMode(_pwm_pin_b, OUTPUT);
-  pinMode(_enc_1_pin, INPUT_PULLUP);
-  pinMode(_enc_2_pin, INPUT_PULLUP);
+  //pinMode(_enc_1_pin, INPUT_PULLUP);
+  //pinMode(_enc_2_pin, INPUT_PULLUP);
 
 
   /*
