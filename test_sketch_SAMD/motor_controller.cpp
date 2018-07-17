@@ -57,9 +57,9 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
   _pid = new PID(&_input, &_output, &_setpoint, _kp, _ki, _kd, P_ON_E, DIRECT);
   sample_time = 50;
   _pid->SetSampleTime(sample_time);
-  output_channel_a = new DimmerZero(_pwm_pin_a);
+  output_channel_a = new DimmerZero(_pwm_pin_a, false);
   output_channel_a->init();
-  output_channel_b = new DimmerZero(_pwm_pin_b);
+  output_channel_b = new DimmerZero(_pwm_pin_b, false);
   output_channel_b->init();
   SetOutputLimits(-100, 100);
 

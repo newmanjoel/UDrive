@@ -11,10 +11,25 @@ Lines 214-270 are all the code for connecting the GUI to the code
 from PyQt4 import QtCore, QtGui, uic  # Import the PyQt4 module we'll need
 from PyQt4.QtCore import *
 import sys  # We need sys so that we can pass argv to QApplication
+class Pid(QtGui.QWidget):
+    def __init__(self): #THIS IS SUPER IMPORTANT
+    	super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
+    	uic.loadUi('pid.ui', self) #THIS IS WHERE YOU LOAD THE .UI FILE
+    	self.horizontalSlider_kp.valueChanged.connect(self.slider_changed_kp)
+    	self.horizontalSlider_ki.valueChanged.connect(self.slider_changed_ki)
+    	self.horizontalSlider_kd.valueChanged.connect(self.slider_changed_kd)
 
 app = QtGui.QApplication(sys.argv) # this is important needs to be before the g_settings
+    def slider_changed_kp(self):
+        self.spinner_kp.setValue(float(self.horizontalSlider_kp.value())/100)
+        mc.pid_values[0] = self.spinner_kp.value()
 
 from g_settings import * # all the global variables
+    def slider_changed_ki(self):
+        self.spinner_ki.setValue(float(self.horizontalSlider_ki.value())/100)
+
+    def slider_changed_kd(self):
+        self.spinner_kd.setValue(float(self.horizontalSlider_kd.value())/100)
 
 class MainScreen(QtGui.QMainWindow):
     def __init__(self): #THIS IS SUPER IMPORTANT

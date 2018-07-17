@@ -4,7 +4,18 @@
 #define DATAOUT 11//MOSI
 #define DATAIN  12//MISO
 #define SPICLOCK  13//sck
-#define SLAVESELECT 10//ss
+#define SLAVESELECT 10//ss 
+#define RESET 9
+#define SLEEP 8
+
+#define AOUT1 2
+#define AOUT2 3
+#define BOUT1 4
+#define BOUT2 5
+
+bool reset_pin = false;
+bool sleep_pin = true;
+
 
 
 bool stringComplete = false;
@@ -15,7 +26,7 @@ unsigned long motor_time;
 Motor m1;
 Motor m2;
 DRV8704 mc;
-DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
+// DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
 
 void setup() {
   SerialUSB.begin(9600); // Initialize Serial Monitor USB
@@ -24,8 +35,8 @@ void setup() {
   while (!SerialUSB) ; // Wait for Serial monitor to open
   // Send a welcome message to the serial monitor:
 
-  m1.begin(2, 5, 7, 5);
-  m2.begin(6, 7, 7, 5);
+  m1.begin(2, 3, 7, 5);
+  m2.begin(4, 5, 7, 5);
   mc.begin(SLAVESELECT);
   mc.set_enable(true);// untested
   
@@ -36,14 +47,12 @@ void setup() {
   m1.SetSetpoint(0);
   m2.EnablePID();
   m2.SetSetpoint(0);
-  pinMode(3, OUTPUT);
-  digitalWrite(3, false); // this is the reset pin
-  pinMode(4, OUTPUT);
-  digitalWrite(4, true); // this is the sleep pin // leave this pin alone
+  pinMode(RESET, OUTPUT);
+  digitalWrite(RESET, reset_pin); // this is the reset pin
+  pinMode(SLEEP, OUTPUT);
+  digitalWrite(SLEEP, sleep_pin); // this is the sleep pin // leave this pin alone
   pinMode(SLAVESELECT, OUTPUT);
   delay(10);
-
-  mc_settings = mc.get_settings();
 }
 
 void isr_m1_a() {
@@ -149,10 +158,15 @@ void serialEvent() {
     else if (first.equals("A")) {
       // set the max acceleration
     }
-    else if (first.equals("S")){
-      // for sending settings for the DRV8704
-      mc.reset_STATUS();
-      mc.set_settings(mc_settings);
+    else if (first.equals("R")){
+      // toggle the reset pin
+      reset_pin = !reset_pin;
+      digitalWrite(RESET, reset_pin);
+    }
+    else if( first.equals("S")){
+      // toggle the sleep pin
+      sleep_pin = !sleep_pin;
+      digitalWrite(SLEEP, sleep_pin);
     }
 
 
