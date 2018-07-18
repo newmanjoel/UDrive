@@ -35,6 +35,8 @@ class Motor {
     
     void isrA();
     void isrB();
+    
+    bool _position;
 
   private:
     void SetOutputLimits(int lower_bound, int upper_bound);

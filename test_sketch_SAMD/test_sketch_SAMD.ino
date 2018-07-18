@@ -1,10 +1,10 @@
 #include "motor_controller.h"
 #include "DRV8704.h"
 
-#define DATAOUT 11//MOSI
-#define DATAIN  12//MISO
-#define SPICLOCK  13//sck
-#define SLAVESELECT 10//ss 
+#define DATAOUT 11  //MOSI
+#define DATAIN  12  //MISO
+#define SPICLOCK  13  //SCK
+#define SLAVESELECT 10  //SS
 #define RESET 9
 #define SLEEP 8
 
@@ -18,8 +18,6 @@
 
 bool reset_pin = false;
 bool sleep_pin = true;
-
-
 
 bool stringComplete = false;
 String toSend = "";
@@ -64,19 +62,7 @@ void isr_m1_a() {
 void isr_m1_b() {
   m1.isrB();
 }
-
-
-void loop() {
-  if (stringComplete) {
-    SerialUSB.println("Sending " + toSend + " to Serial");
-    stringComplete = false;
-  }
-  serialEvent();
-
-  m1.Update();
-  m2.Update();
-
-
+void send_info_over_usb() {
   if (millis() - time > 100) {
     double offset = 0;
     double voltage = (double) analogRead(A0);
@@ -101,6 +87,19 @@ void loop() {
 
     time = millis();
   }
+}
+
+void loop() {
+  if (stringComplete) {
+    SerialUSB.println("Sending " + toSend + " to Serial");
+    stringComplete = false;
+  }
+  serialEvent();
+
+  m1.Update();
+  m2.Update();
+
+  send_info_over_usb();
 
 }
 
@@ -116,6 +115,7 @@ void serialEvent() {
     stringComplete = true;
     String first = toSend.substring(0, 1);
     if (first.equals("V")) {
+      m1._position = false;
       int first_comma = toSend.indexOf(',', 1);
       int second_comma = toSend.indexOf(',', first_comma + 1);
       m1.SetSetpoint(toSend.substring(1, first_comma).toFloat());
@@ -138,6 +138,7 @@ void serialEvent() {
       double manual_speed_2 = (double) toSend.substring(first_comma + 1, second_comma).toFloat();
       m1.Manual(manual_speed_1);
       m2.Manual(manual_speed_2);
+      m1._position = false;
     }
     else if (first.equals("E")) {
       bool local_enable = false;
@@ -157,7 +158,10 @@ void serialEvent() {
     }
     else if (first.equals("T")) {
       // set the position that you want to go to (go To)
-      
+      m1._position = true;
+      m1.EnablePID();
+      m2.EnablePID();
+
     }
     else if (first.equals("A")) {
       // set the max acceleration
@@ -205,14 +209,14 @@ void serialEvent() {
       int gd_sink_current = (int)toSend.substring(comma_12 + 1, comma_13).toInt();
       int gd_source_current = (int)toSend.substring(comma_13 + 1).toInt();
 
-      if(enable == 1){
+      if (enable == 1) {
         new_settings.enabled = ENBL_Values::ENABLE;
       }
-      else{
+      else {
         new_settings.enabled = ENBL_Values::DISABLE;
       }
-      
-      
+
+
     }
 
 

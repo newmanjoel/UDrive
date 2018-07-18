@@ -33,13 +33,12 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1 = -1, int enc_2 = -1)
   _enc_2_pin = enc_2;
   pinMode(_pwm_pin_a, OUTPUT);
   pinMode(_pwm_pin_b, OUTPUT);
-  if (_enc_1_pin == -1 or _enc_2_pin == -1) {
-
-  }
+  if (_enc_1_pin == -1 or _enc_2_pin == -1) {}
   else {
     pinMode(_enc_1_pin, INPUT_PULLUP);
     pinMode(_enc_2_pin, INPUT_PULLUP);
   }
+  _position = false;
 
 
   /*
@@ -67,7 +66,6 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1 = -1, int enc_2 = -1)
   output_channel_b = new DimmerZero(_pwm_pin_b, false);
   output_channel_b->init();
   SetOutputLimits(-100, 100);
-
 
 }
 
@@ -164,7 +162,7 @@ void Motor::Feedback()
   this_time = millis();
   _input = (count);
   _input *= 60.0 / (1296 * sample_time * 0.001); // (tics/0.1sec) * (1 rev / 1296 tics) * (60s/ 1 min) = rpm
-  last_time = this_time;
+  // last_time = this_time;
   interrupts();
 }
 
@@ -223,7 +221,9 @@ int Motor::Output()
     last_last_count = last_count;
     last_count = count;
     _total_count += count;
-    count = 0;
+    if (! _position) {
+      count = 0;
+    }
   }
   return pid_computed;
 }
