@@ -24,7 +24,7 @@ Motor::Motor()
   // for use with begin
 }
 
-void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
+void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1 = -1, int enc_2 = -1)
 {
   // setting up the pins
   _pwm_pin_a = pwm_pin_1;
@@ -33,8 +33,13 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
   _enc_2_pin = enc_2;
   pinMode(_pwm_pin_a, OUTPUT);
   pinMode(_pwm_pin_b, OUTPUT);
-  //pinMode(_enc_1_pin, INPUT_PULLUP);
-  //pinMode(_enc_2_pin, INPUT_PULLUP);
+  if (_enc_1_pin == -1 or _enc_2_pin == -1) {
+
+  }
+  else {
+    pinMode(_enc_1_pin, INPUT_PULLUP);
+    pinMode(_enc_2_pin, INPUT_PULLUP);
+  }
 
 
   /*
@@ -248,7 +253,7 @@ void Motor::SetWheelSize(double new_wheel_size)
 /*
    BELOW THIS POINT IS ALL GETTERS
 */
-double Motor::GetWheelSize(){
+double Motor::GetWheelSize() {
   return _wheel_size;
 }
 double Motor::GetPGain()

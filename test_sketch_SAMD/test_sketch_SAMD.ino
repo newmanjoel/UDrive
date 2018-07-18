@@ -13,6 +13,9 @@
 #define BOUT1 4
 #define BOUT2 5
 
+#define ENCODERA 6
+#define ENCODERB 7
+
 bool reset_pin = false;
 bool sleep_pin = true;
 
@@ -35,14 +38,14 @@ void setup() {
   while (!SerialUSB) ; // Wait for Serial monitor to open
   // Send a welcome message to the serial monitor:
 
-  m1.begin(2, 3, 7, 5);
-  m2.begin(4, 5, 7, 5);
+  m1.begin(AOUT1, AOUT2, ENCODERA, ENCODERB);
+  m2.begin(BOUT1, BOUT2, -1, -1);
   mc.begin(SLAVESELECT);
   mc.set_enable(true);// untested
-  
-  //attachInterrupt(digitalPinToInterrupt(7), isr_m1_a, CHANGE);
-  //attachInterrupt(digitalPinToInterrupt(5), isr_m1_b, CHANGE);
-  motor_time = time= millis();
+
+  attachInterrupt(digitalPinToInterrupt(ENCODERA), isr_m1_a, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODERB), isr_m1_b, CHANGE);
+  motor_time = time = millis();
   m1.EnablePID();
   m1.SetSetpoint(0);
   m2.EnablePID();
@@ -74,7 +77,7 @@ void loop() {
   m2.Update();
 
 
-  if (millis() - time > 1) {
+  if (millis() - time > 100) {
     double offset = 0;
     double voltage = (double) analogRead(A0);
     double m1_current = voltage * 3.3 / 1000 - offset;
@@ -117,7 +120,7 @@ void serialEvent() {
       int second_comma = toSend.indexOf(',', first_comma + 1);
       m1.SetSetpoint(toSend.substring(1, first_comma).toFloat());
       m1.EnablePID();
-      m2.SetSetpoint(toSend.substring(first_comma+1, second_comma).toFloat());
+      m2.SetSetpoint(toSend.substring(first_comma + 1, second_comma).toFloat());
       m2.EnablePID();
     }
     else if (first.equals("P")) {
@@ -132,7 +135,7 @@ void serialEvent() {
       int first_comma = toSend.indexOf(',', 1);
       int second_comma = toSend.indexOf(',', first_comma + 1);
       double manual_speed_1 = (double) toSend.substring(1, first_comma).toFloat();
-      double manual_speed_2 = (double) toSend.substring(first_comma+1, second_comma).toFloat();
+      double manual_speed_2 = (double) toSend.substring(first_comma + 1, second_comma).toFloat();
       m1.Manual(manual_speed_1);
       m2.Manual(manual_speed_2);
     }
@@ -148,25 +151,68 @@ void serialEvent() {
         m2.DisablePID();
       }
     }
-    else if (first.equals("D")) {
+    else if (first.equals("W")) {
       m1.SetWheelSize((double) toSend.substring(1).toFloat());
       m2.SetWheelSize(m1.GetWheelSize());
     }
     else if (first.equals("T")) {
-      // set the ticks per rev
+      // set the position that you want to go to (go To)
+      
     }
     else if (first.equals("A")) {
       // set the max acceleration
     }
-    else if (first.equals("R")){
+    else if (first.equals("R")) {
       // toggle the reset pin
       reset_pin = !reset_pin;
       digitalWrite(RESET, reset_pin);
     }
-    else if( first.equals("S")){
+    else if ( first.equals("S")) {
       // toggle the sleep pin
       sleep_pin = !sleep_pin;
       digitalWrite(SLEEP, sleep_pin);
+    }
+    else if ( first.equals("D")) {
+      // set the settings for the DRV8704
+      // have 14 values in total
+      DRV8704_Settings new_settings = mc.get_settings();
+      int comma_1 = toSend.indexOf(',', 1);
+      int comma_2 = toSend.indexOf(',', comma_1 + 1);
+      int comma_3 = toSend.indexOf(',', comma_2 + 1);
+      int comma_4 = toSend.indexOf(',', comma_3 + 1);
+      int comma_5 = toSend.indexOf(',', comma_4 + 1);
+      int comma_6 = toSend.indexOf(',', comma_5 + 1);
+      int comma_7 = toSend.indexOf(',', comma_6 + 1);
+      int comma_8 = toSend.indexOf(',', comma_7 + 1);
+      int comma_9 = toSend.indexOf(',', comma_8 + 1);
+      int comma_10 = toSend.indexOf(',', comma_9 + 1);
+      int comma_11 = toSend.indexOf(',', comma_10 + 1);
+      int comma_12 = toSend.indexOf(',', comma_11 + 1);
+      int comma_13 = toSend.indexOf(',', comma_12 + 1);
+
+      int enable = (int)toSend.substring(1, comma_1).toInt();
+      int A_gain = (int)toSend.substring(comma_1 + 1, comma_2).toInt();
+      int dead_time = (int)toSend.substring(comma_2 + 1, comma_3).toInt();
+      int torque = (int)toSend.substring(comma_3 + 1, comma_4).toInt();
+      int time_off = (int)toSend.substring(comma_4 + 1, comma_5).toInt();
+      int blank_time = (int)toSend.substring(comma_5 + 1, comma_6).toInt();
+      int decay_time = (int)toSend.substring(comma_6 + 1, comma_7).toInt();
+      int decay_mode = (int)toSend.substring(comma_7 + 1, comma_8).toInt();
+      int ocp_thresh = (int)toSend.substring(comma_8 + 1, comma_9).toInt();
+      int ocp_time = (int)toSend.substring(comma_9 + 1, comma_10).toInt();
+      int gd_sink_time = (int)toSend.substring(comma_10 + 1, comma_11).toInt();
+      int gd_source_time = (int)toSend.substring(comma_11 + 1, comma_12).toInt();
+      int gd_sink_current = (int)toSend.substring(comma_12 + 1, comma_13).toInt();
+      int gd_source_current = (int)toSend.substring(comma_13 + 1).toInt();
+
+      if(enable == 1){
+        new_settings.enabled = ENBL_Values::ENABLE;
+      }
+      else{
+        new_settings.enabled = ENBL_Values::DISABLE;
+      }
+      
+      
     }
 
 

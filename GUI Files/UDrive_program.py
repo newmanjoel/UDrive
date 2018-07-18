@@ -39,6 +39,13 @@ class UDrive():
         self.write_flag = False
         print "starting the uDriver"
 
+    def send_string(self, what_to_send):
+        self.arduino_input = what_to_send
+        self.write_data = True
+        self.send()
+        from g_settings import debug_window
+        debug_window.debug_output("sent: |{}|".format(self.arduino_input))
+
     def send(self):
         if(self.write_flag):
             self.write_data(self.arduino_input)
@@ -81,6 +88,15 @@ class UDrive():
         self.arduino_input = "V{},{} ".format(value_1, value_2)
         self.write_flag = True
 
+    def position(self, value_1, value_2):
+        if(self.reverse_1):
+            value_1 = -value_1
+        if(self.reverse_2):
+            value_2 = -value_2
+        # print "V{},{}".format(value_1, value_2)
+        self.arduino_input = "T{},{} ".format(value_1, value_2)
+        self.write_flag = True
+
     def send_pid(self):
         self.arduino_input = "P{},{},{} ".format(
                                             self.pid_values[0],
@@ -88,3 +104,6 @@ class UDrive():
                                             self.pid_values[2]
                                             )
         self.write_flag = True
+
+
+

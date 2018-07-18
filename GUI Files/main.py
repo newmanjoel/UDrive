@@ -11,25 +11,8 @@ Lines 214-270 are all the code for connecting the GUI to the code
 from PyQt4 import QtCore, QtGui, uic  # Import the PyQt4 module we'll need
 from PyQt4.QtCore import *
 import sys  # We need sys so that we can pass argv to QApplication
-class Pid(QtGui.QWidget):
-    def __init__(self): #THIS IS SUPER IMPORTANT
-    	super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
-    	uic.loadUi('pid.ui', self) #THIS IS WHERE YOU LOAD THE .UI FILE
-    	self.horizontalSlider_kp.valueChanged.connect(self.slider_changed_kp)
-    	self.horizontalSlider_ki.valueChanged.connect(self.slider_changed_ki)
-    	self.horizontalSlider_kd.valueChanged.connect(self.slider_changed_kd)
-
 app = QtGui.QApplication(sys.argv) # this is important needs to be before the g_settings
-    def slider_changed_kp(self):
-        self.spinner_kp.setValue(float(self.horizontalSlider_kp.value())/100)
-        mc.pid_values[0] = self.spinner_kp.value()
-
 from g_settings import * # all the global variables
-    def slider_changed_ki(self):
-        self.spinner_ki.setValue(float(self.horizontalSlider_ki.value())/100)
-
-    def slider_changed_kd(self):
-        self.spinner_kd.setValue(float(self.horizontalSlider_kd.value())/100)
 
 class MainScreen(QtGui.QMainWindow):
     def __init__(self): #THIS IS SUPER IMPORTANT
@@ -74,10 +57,14 @@ class MainScreen(QtGui.QMainWindow):
         mcd_action.setStatusTip("Configure the DRV8704 Settings")
         mcd_action.triggered.connect(self.show_mcd_callback)
 
+        pid_action = QtGui.QAction("&PID adjustment settings", self)
+        pid_action.triggered.connect(self.show_pid_callback)
+
         config_menu = main_menu.addMenu("&Config")
         config_menu.addAction(power_action)
         config_menu.addAction(debug_action)
         config_menu.addAction(mcd_action)
+        config_menu.addAction(pid_action)
         # start of all of the connected objects
 
         # status
@@ -102,6 +89,10 @@ class MainScreen(QtGui.QMainWindow):
         serial_window.close()
         self.close()
         event.accept()
+
+    def show_pid_callback(self):
+        debug_window.debug_output("showing the pid window")
+        pid_window.show()
 
     def show_mcd_callback(self):
         debug_window.debug_output("showing the mcd window")
@@ -219,6 +210,11 @@ class MainScreen(QtGui.QMainWindow):
         value_2 = self.motor_2_spinner.value()
         mc.manual(value_1, value_2)
 
+    def send_position(self):
+        value_1 = self.motor_1_spinner.value()
+        value_2 = self.motor_2_spinner.value()
+        mc.position(value_1, value_2)
+
     def print_output(self, s):
         global setpoint_data
         global m1_output_data
@@ -227,6 +223,7 @@ class MainScreen(QtGui.QMainWindow):
         global current_data
 
         try:
+
             split_csv = s.split(",")
             for i in range(len(split_csv)):
                 split_csv[i] = eval(split_csv[i])

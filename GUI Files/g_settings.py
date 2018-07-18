@@ -18,6 +18,7 @@ from UDrive_program import UDrive
 from Debug_program import DebugScreen
 from Serial_program import SerialScreen
 from Motor_Driver_Settings import MCD_Settings
+from Pid_program import PidScreen
 
 base_time = time.time()
 setpoint_data = np.array([0.0, 0.0])
@@ -39,6 +40,7 @@ mc = UDrive(ser)
 
 serial_window = SerialScreen() # mc has to be created before this
 mcd_window = MCD_Settings()
+pid_window = PidScreen()
 
 print "starting up the gobal settings"
 

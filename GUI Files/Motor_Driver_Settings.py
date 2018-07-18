@@ -6,6 +6,29 @@ Created on Sun Jul 08 17:05:20 2018
 """
 from g_settings import *
 
+
+'''
+These are the settings on the actual mc
+    int chip_select_pin; // cant change
+    double current_sense_resistor; // cant change
+    int torque;
+    ENBL_Values enabled;
+    ISGAIN_Values current_gain;
+    DTIME_Values dead_time;
+    int off_time;
+    PWMMODE_Values pwm_mode;
+    int blanking_time;
+    int mixed_decay_time;
+    DECMOD_Values decay_mode;
+    OCPTH_Values over_current_protection_voltage_threshold;
+    OCPDEG_Values over_current_protection_deglitch_time;
+    TDRIVEN_Values gate_drive_sink_time;
+    TDRIVEP_Values gate_drive_source_time;
+    IDRIVEN_Values gate_drive_peak_sink_current;
+    IDRIVEP_Values gate_drive_peak_source_current;
+    DRV8704_Status status;
+'''
+
 class MCD_Settings(QtGui.QWidget):
     def __init__(self): #THIS IS SUPER IMPORTANT
         super(self.__class__, self).__init__() #THIS IS SUPER IMPORTANT
@@ -80,12 +103,96 @@ class MCD_Settings(QtGui.QWidget):
         self.comboBox_19.setCurrentIndex(2)
         self.comboBox_9.setCurrentIndex(3)
         self.comboBox_10.setCurrentIndex(3)
+        from g_settings import debug_window
         debug_window.debug_output("Resetting all of the values")
 
     def send_all_values(self):
         from g_settings import debug_window, mc
         debug_window.debug_output("SENDING ALL OF THE VALUES")
-        mc.write_data("S")
+        debug_window.debug_output("CONTROL TAB: {}".format(self.get_ctrl_tab_data()))
+        debug_window.debug_output("TORQUE TAB: {}".format(self.get_torque_tab_data()))
+        debug_window.debug_output("OFF TAB: {}".format(self.get_off_tab_data()))
+        debug_window.debug_output("BLANK TAB: {}".format(self.get_blank_tab_data()))
+        debug_window.debug_output("DECAY TAB: {}".format(self.get_decay_tab_data()))
+        debug_window.debug_output("DRIVE TAB: {}".format(self.get_drive_tab_data()))
+        sts = ""
+        ctrl = self.get_ctrl_tab_data()
+        sts += "{},{},{}".format(int(str(ctrl[0]), base=2),
+                                 int(str(ctrl[1]), base=2),
+                                 int(str(ctrl[2]), base=2))
+        sts += ",{}".format(self.get_torque_tab_data()) # fine being 8 bit number
+        sts += ",{}".format(self.get_off_tab_data()) # fine being 8 bit number
+        sts += ",{}".format(self.get_blank_tab_data()) # fine being 8 bit number
+
+        decay = self.get_decay_tab_data()
+        sts += ",{},{}".format(int(decay[0]),  # fine being 8 bit number
+                               int(str(decay[1]), base=2))
+
+        drive = self.get_drive_tab_data()
+        sts += ",{},{},{},{},{},{}".format(
+                                int(str(drive[0]), base=2),
+                                int(str(drive[1]), base=2),
+                                int(str(drive[2]), base=2),
+                                int(str(drive[3]), base=2),
+                                int(str(drive[4]), base=2),
+                                int(str(drive[5]), base=2))
+
+        debug_window.debug_output(sts)
+
+        mc.send_string("D{}".format(sts))
+
+    def strip_num_from_text(self, input_string):
+        #print input_string
+        #print int(input_string.split(":")[0])
+        return int(input_string.split(":")[0])
+
+    def get_ctrl_tab_data(self):
+        data = [0,0,0]
+        enable = self.comboBox.currentText()
+        current_gain = self.comboBox_2.currentText()
+        dead_set_time = self.comboBox_3.currentText()
+
+        data[0] = self.strip_num_from_text(enable)
+        data[1] = self.strip_num_from_text(current_gain)
+        data[2] = self.strip_num_from_text(dead_set_time)
+        return data
+
+    def get_torque_tab_data(self):
+        return self.spinBox.value()
+
+    def get_off_tab_data(self):
+        return self.spinBox_2.value()
+
+    def get_blank_tab_data(self):
+        return self.spinBox_3.value()
+
+    def get_decay_tab_data(self):
+        data = [0,0]
+        data[0] = self.spinBox_4.value()
+        decay_mode = self.comboBox_4.currentText()
+
+        data[1] = self.strip_num_from_text(decay_mode)
+        return data
+
+    def get_drive_tab_data(self):
+        data = [0,0,0,0,0,0]
+        ocp_thresh = self.comboBox_5.currentText()
+        ocp_time =self.comboBox_6.currentText()
+        gd_sink_time = self.comboBox_7.currentText()
+        gd_source_time = self.comboBox_19.currentText()
+        gd_sink_current = self.comboBox_9.currentText()
+        gd_source_current = self.comboBox_10.currentText()
+
+        data[0] = self.strip_num_from_text(ocp_thresh)
+        data[1] = self.strip_num_from_text(ocp_time)
+        data[2] = self.strip_num_from_text(gd_sink_time)
+        data[3] = self.strip_num_from_text(gd_source_time)
+        data[4] = self.strip_num_from_text(gd_sink_current)
+        data[5] = self.strip_num_from_text(gd_source_current)
+
+        return data
+
+
 
 
 if (__name__ == "__main__"):
