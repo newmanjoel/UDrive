@@ -166,6 +166,25 @@ void serialEvent() {
     else if (first.equals("A")) {
       // set the max acceleration
     }
+    else if(first.equals("Q")){
+      // read the motor driver settings
+      mc.read_status();
+      DRV8704_Settings _settings = mc.get_settings();
+      
+      SerialUSB.print("SETTINGS:");
+      SerialUSB.println(_settings.status.overtemp_shutdown);
+      /*SerialUSB.print(",");
+      SerialUSB.print(_settings.status.channel_A_overcurrent_protection);
+      SerialUSB.print(",");
+      SerialUSB.print(_settings.status.channel_B_overcurrent_protection);
+      SerialUSB.print(",");
+      SerialUSB.print(_settings.status.channel_A_predriver_fault);
+      SerialUSB.print(",");
+      SerialUSB.print(_settings.status.channel_B_predriver_fault);
+      SerialUSB.print(",");
+      SerialUSB.println(_settings.status.undervoltage_lockout);*/
+      
+    }
     else if (first.equals("R")) {
       // toggle the reset pin
       reset_pin = !reset_pin;
@@ -209,14 +228,158 @@ void serialEvent() {
       int gd_sink_current = (int)toSend.substring(comma_12 + 1, comma_13).toInt();
       int gd_source_current = (int)toSend.substring(comma_13 + 1).toInt();
 
-      if (enable == 1) {
-        new_settings.enabled = ENBL_Values::ENABLE;
-      }
-      else {
-        new_settings.enabled = ENBL_Values::DISABLE;
-      }
+      switch (enable) {
+        case 0:
+          new_settings.enabled = ENBL_Values::DISABLE;
+          break;
+        default:
+          new_settings.enabled = ENBL_Values::ENABLE;
+          break;
+      };
 
+      switch (A_gain) {
+        case 0:
+          new_settings.current_gain = ISGAIN_Values::GAIN_5;
+          break;
+        case 1:
+          new_settings.current_gain = ISGAIN_Values::GAIN_10;
+          break;
+        case 2:
+          new_settings.current_gain = ISGAIN_Values::GAIN_20;
+          break;
+        default:
+          new_settings.current_gain = ISGAIN_Values::GAIN_40;
+          break;
+      };
 
+      switch (dead_time) {
+        case 1:
+          new_settings.dead_time = DTIME_Values::DEAD_460;
+          break;
+        case 2:
+          new_settings.dead_time = DTIME_Values::DEAD_670;
+          break;
+        case 3:
+          new_settings.dead_time = DTIME_Values::DEAD_880;
+          break;
+        default:
+          new_settings.dead_time = DTIME_Values::DEAD_410;
+          break;
+      };
+
+      new_settings.off_time = time_off;
+
+      new_settings.blanking_time = blank_time;
+
+      new_settings.mixed_decay_time = decay_time;
+
+      switch (decay_mode) {
+        case 1:
+          new_settings.decay_mode = DECMOD_Values::FAST_DECAY;
+          break;
+        case 2:
+          new_settings.decay_mode = DECMOD_Values::MIXED_DECAY;
+          break;
+        case 3:
+          new_settings.decay_mode = DECMOD_Values::AUTO_MIXED;
+          break;
+        default:
+          new_settings.decay_mode = DECMOD_Values::SLOW_DECAY;
+          break;
+      };
+      switch (ocp_thresh) {
+        case 0:
+          new_settings.over_current_protection_voltage_threshold = OCPTH_Values::THRESHOLD_250mV;
+          break;
+        case 2:
+          new_settings.over_current_protection_voltage_threshold = OCPTH_Values::THRESHOLD_750mV;
+          break;
+        case 3:
+          new_settings.over_current_protection_voltage_threshold = OCPTH_Values::THRESHOLD_1000mV;
+          break;
+        default:
+          new_settings.over_current_protection_voltage_threshold = OCPTH_Values::THRESHOLD_500mV;
+          break;
+      };
+
+      switch (ocp_time) {
+        case 0:
+          new_settings.over_current_protection_deglitch_time = OCPDEG_Values::DEGLITCH_1_05us;
+          break;
+        case 2:
+          new_settings.over_current_protection_deglitch_time = OCPDEG_Values::DEGLITCH_4_20us;
+          break;
+        case 3:
+          new_settings.over_current_protection_deglitch_time = OCPDEG_Values::DEGLITCH_8_40us;
+          break;
+        default:
+          new_settings.over_current_protection_deglitch_time = OCPDEG_Values::DEGLITCH_2_10us;
+          break;
+      };
+
+      switch (gd_sink_time) {
+        case 0:
+          new_settings.gate_drive_sink_time = TDRIVEN_Values::DRIVE_SINK_263_ns;
+          break;
+        case 1:
+          new_settings.gate_drive_sink_time = TDRIVEN_Values::DRIVE_SINK_525_ns;
+          break;
+        case 3:
+          new_settings.gate_drive_sink_time = TDRIVEN_Values::DRIVE_SINK_2100_ns;
+          break;
+        default:
+          new_settings.gate_drive_sink_time = TDRIVEN_Values::DRIVE_SINK_1050_ns;
+          break;
+      };
+
+      switch (gd_source_time) {
+        case 0:
+          new_settings.gate_drive_source_time = TDRIVEP_Values::DRIVE_SOURCE_263_ns;
+          break;
+        case 1:
+          new_settings.gate_drive_source_time = TDRIVEP_Values::DRIVE_SOURCE_525_ns;
+          break;
+        case 3:
+          new_settings.gate_drive_source_time = TDRIVEP_Values::DRIVE_SOURCE_2100_ns;
+          break;
+        default:
+          new_settings.gate_drive_source_time = TDRIVEP_Values::DRIVE_SOURCE_1050_ns;
+          break;
+      };
+
+      switch (gd_sink_current) {
+        case 0:
+          new_settings.gate_drive_peak_sink_current = IDRIVEN_Values::DRIVE_SINK_CURRENT_100_mA;
+          break;
+        case 1:
+          new_settings.gate_drive_peak_sink_current = IDRIVEN_Values::DRIVE_SINK_CURRENT_200_mA;
+          break;
+        case 2:
+          new_settings.gate_drive_peak_sink_current = IDRIVEN_Values::DRIVE_SINK_CURRENT_300_mA;
+          break;
+        default:
+          new_settings.gate_drive_peak_sink_current = IDRIVEN_Values::DRIVE_SINK_CURRENT_400_mA;
+          break;
+      };
+
+      switch (gd_source_current) {
+        case 0:
+          new_settings.gate_drive_peak_source_current = IDRIVEP_Values::DRIVE_SOURCE_CURRENT_50_mA;
+          break;
+        case 1:
+          new_settings.gate_drive_peak_source_current = IDRIVEP_Values::DRIVE_SOURCE_CURRENT_100_mA;
+          break;
+        case 2:
+          new_settings.gate_drive_peak_source_current = IDRIVEP_Values::DRIVE_SOURCE_CURRENT_150_mA;
+          break;
+        default:
+          new_settings.gate_drive_peak_source_current = IDRIVEP_Values::DRIVE_SOURCE_CURRENT_200_mA;
+          break;
+      };
+      
+      new_settings.torque = torque;
+
+      mc.set_settings(new_settings);
     }
 
 

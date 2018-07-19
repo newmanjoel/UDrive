@@ -41,7 +41,7 @@ class UDrive():
 
     def send_string(self, what_to_send):
         self.arduino_input = what_to_send
-        self.write_data = True
+        self.write_flag = True
         self.send()
         from g_settings import debug_window
         debug_window.debug_output("sent: |{}|".format(self.arduino_input))

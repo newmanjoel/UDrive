@@ -55,6 +55,9 @@ class MCD_Settings(QtGui.QWidget):
         self.reset_button.clicked.connect(self.reset_all_values)
         self.send_button.clicked.connect(self.send_all_values)
 
+        # STATUS TAB
+        self.pushButton.clicked.connect(self.get_status)
+
         print "starting up the MC"
 
     def calculate_i_chop(self):
@@ -70,6 +73,11 @@ class MCD_Settings(QtGui.QWidget):
         elif(gain_index == 3):
             gain = 40
         self.label_6.setText("I = {:.4}".format((2.75*torque)/(256.0*gain*0.0075)))
+
+    def get_status(self):
+        from g_settings import debug_window,mc
+        mc.send_string("Q")
+        print mc.read_data()
 
     def fixed_time_off(self):
         t_off = self.spinBox_2.value()

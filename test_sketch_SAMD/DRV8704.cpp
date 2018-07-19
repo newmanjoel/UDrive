@@ -140,7 +140,8 @@ bool DRV8704::read_status(){
     results = 0;
     results = read_register_16(STATUS_Register);
     results = results&~STATUS_Reserved_Bit;
-    settings.status.overtemp_shutdown = results&OTS_Bit;
+    //settings.status.overtemp_shutdown = results&OTS_Bit;
+    settings.status.overtemp_shutdown = results;
     settings.status.channel_A_overcurrent_protection = results&AOCP_Bit;
     settings.status.channel_B_overcurrent_protection = results&BOCP_Bit;
     settings.status.channel_A_predriver_fault = results&APDF_Bit;
