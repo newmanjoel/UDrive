@@ -13,6 +13,22 @@ double my_map(double x, double in_min, double in_max, double out_min, double out
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
+template <class T>
+T limit_rate(T current, T last, T rate) {
+  T difference = current - last;
+  bool dir = current > last; // true is going up. false is going down
+  if (abs(difference) > rate) {
+    if (dir) {
+      // this is going up
+      current = last + rate;
+    }
+    else {
+      current = last - rate;
+    }
+  }
+  return current;
+}
+
 Motor::Motor(int pwm_pin_1, int pwm_pin_2, int enc_1, int enc_2)
 {
   begin(pwm_pin_1, pwm_pin_2, enc_1, enc_2);
@@ -47,8 +63,8 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1 = -1, int enc_2 = -1)
     For more information on this look here
     (https://robotics.stackexchange.com/questions/167/what-are-good-strategies-for-tuning-pid-loops)
   */
-  _kp = 0.01;
-  _ki = 1;
+  _kp = 0.43;
+  _ki = 0.3;
   _kd = 0;
 
   // input, output, and setpoint are used in the PID
@@ -57,6 +73,7 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1 = -1, int enc_2 = -1)
   _setpoint = 0;
   last_count = 0;
   _total_count = 0;
+  _wheel_size = 0.07; // 70mm or 7 cm
   // _pid.SetSampleTime(1); // this is untested
   _pid = new PID(&_input, &_output, &_setpoint, _kp, _ki, _kd, P_ON_E, DIRECT);
   sample_time = 50;
@@ -66,6 +83,8 @@ void Motor::begin(int pwm_pin_1, int pwm_pin_2, int enc_1 = -1, int enc_2 = -1)
   output_channel_b = new DimmerZero(_pwm_pin_b, false);
   output_channel_b->init();
   SetOutputLimits(-100, 100);
+  this_time = micros();
+  last_time = this_time;
 
 }
 
@@ -87,6 +106,8 @@ void Motor::isrB() {
   }
 }
 
+
+
 /*
   This function is used to manually set the speed of the motor.
   Speed should be between -255 and 255 however it is constrained to that in the
@@ -97,6 +118,20 @@ void Motor::Manual(double speed)
   _pid->SetMode(MANUAL);
   _output = my_map(speed, -100, 100, -100, 100);
   Output();
+  _position = false;
+}
+
+void Motor::Velocity(double speed) {
+  _setpoint = speed;
+  _position = false;
+  EnablePID();
+
+}
+
+void Motor::Position(double distance) {
+  _setpoint = distance/10.0;
+  _position = true;
+  EnablePID();
 }
 
 
@@ -125,11 +160,13 @@ void Motor::SetSetpoint(int new_setpoint)
 */
 void Motor::EnablePID()
 {
-  _pid->SetMode(AUTOMATIC);
-  last_last_count = last_count;
-  last_count = count;
-  _total_count += count;
-  count = 0;
+  if (_pid->GetMode() != AUTOMATIC) {
+    _pid->SetMode(AUTOMATIC);
+    last_last_count = last_count;
+    last_count = count;
+    _total_count += count;
+    count = 0;
+  }
 }
 /*
   Turning off the PID, This will force the motor to stop and be set to manual mode
@@ -137,7 +174,6 @@ void Motor::EnablePID()
 void Motor::DisablePID()
 {
   Manual(0);
-  _pid->SetMode(MANUAL);
 }
 
 // This sets the output of the PID, external use of this should not be needed
@@ -159,10 +195,20 @@ bool Motor::PidEnabled()
 void Motor::Feedback()
 {
   noInterrupts();
-  this_time = millis();
-  _input = (count);
-  _input *= 60.0 / (1296 * sample_time * 0.001); // (tics/0.1sec) * (1 rev / 1296 tics) * (60s/ 1 min) = rpm
-  // last_time = this_time;
+  this_time = micros();
+  //_input = count;
+  if (not _position) {
+    _input = count * 60.0 / (1288.848 * sample_time * 0.001); // (tics/0.1sec) * (1 rev / 1296 tics) * (60s/ 1 min) = rpm
+    //_input *= _wheel_size * PI; // m per rev, _input is now in m
+  }
+  else {
+    //sample_time = (this_time - last_time);
+    //sample_time *= 0.000001; // micro into seconds
+    //_input /= sample_time; // whatever per sec, _input is now in m/s
+    _input = count * 0.0007759; // 1288.848 revs per ticks, _input is now in revolutions
+  }
+  last_time = this_time;
+
   interrupts();
 }
 
@@ -193,6 +239,7 @@ int Motor::Output()
     With our linear actuators if we have a output of less than 80 they dont move
     and just make a bad noise. This just adds a bit of protection for our ears.
   */
+  //last_last_count = limit_rate(_output, last_last_count, 10.0);
   if (_output > 0) {
     output_channel_a->setValue(
       my_map(abs(_output), 0, 100, 0, output_channel_a->getMaxValue())
@@ -210,17 +257,14 @@ int Motor::Output()
     );
   }
 
-  /*
-     This block sets the default direction for the linear actuator.
+  //last_last_count = _output;
 
-     I think this one line could replace this block but its untested
-     _output>0 ? digitalWrite(_dir_pin,1) : digitalWrite(_dir_pin,0);
-  */
 
   if (pid_computed == 1) {
     last_last_count = last_count;
-    last_count = count;
-    _total_count += count;
+    last_count = _input;
+
+    //_total_count += count;
     if (! _position) {
       count = 0;
     }
@@ -288,3 +332,8 @@ double Motor::GetOutput()
 {
   return _output;
 }
+double Motor::GetLastInput()
+{
+  return last_count;
+}
+

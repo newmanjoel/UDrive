@@ -39,6 +39,9 @@ class MCD_Settings(QtGui.QWidget):
 
         # TORQUE TAB
         self.spinBox.valueChanged.connect(self.calculate_i_chop)
+        self.calculate_i_chop()
+        self.dial.valueChanged.connect(self.auto_send_check)
+
 
         # OFF TAB
         self.spinBox_2.valueChanged.connect(self.fixed_time_off)
@@ -77,7 +80,7 @@ class MCD_Settings(QtGui.QWidget):
     def get_status(self):
         from g_settings import debug_window,mc
         mc.send_string("Q")
-        print mc.read_data()
+        #print mc.read_data()
 
     def fixed_time_off(self):
         t_off = self.spinBox_2.value()
@@ -113,6 +116,10 @@ class MCD_Settings(QtGui.QWidget):
         self.comboBox_10.setCurrentIndex(3)
         from g_settings import debug_window
         debug_window.debug_output("Resetting all of the values")
+
+    def auto_send_check(self):
+        if(self.checkBox.isChecked()):
+            self.send_all_values()
 
     def send_all_values(self):
         from g_settings import debug_window, mc

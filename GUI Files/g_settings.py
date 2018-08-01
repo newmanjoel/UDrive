@@ -21,12 +21,22 @@ from Motor_Driver_Settings import MCD_Settings
 from Pid_program import PidScreen
 
 base_time = time.time()
-setpoint_data = np.array([0.0, 0.0])
-m1_output_data = np.array([0.0, 0.0])
-m1_output_data = np.array([0.0, 0.0])
-input_data = np.array([0.0, 0.0])
-current_data = np.array([0.0, 0.0])
-xdata = np.array([0.0, 1.0])
+
+
+m1_data = {"setpoint": np.array([0.0, 0.0]), "output": np.array([0.0, 0.0]), "input": np.array([0.0, 0.0])}
+m2_data = {"setpoint": np.array([0.0, 0.0]), "output": np.array([0.0, 0.0]), "input": np.array([0.0, 0.0])}
+
+m1_show_lines = {"setpoint": True, "output": True, "input": True}
+m2_show_lines = {"setpoint": False, "output": False, "input": False}
+
+m1_linetypes = {"setpoint": "--", "output": "-", "input": "-"}
+m2_linetypes = {"setpoint": "--", "output": "-", "input": "-"}
+
+m1_colours = {"setpoint": "r", "output": "g", "input": "b"}
+m2_colours = {"setpoint": "r", "output": "b", "input": "g"}
+
+
+xdata = np.array([base_time, base_time])
 run_flag = True
 write_flag = False
 data_size = 1000

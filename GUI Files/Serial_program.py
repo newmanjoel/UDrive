@@ -31,7 +31,7 @@ class SerialScreen(QtGui.QWidget):
         try:
             from g_settings import mc, debug_window
             print "trying to connect to {}".format(self.ports[self.comboBox.currentIndex()][0])
-            ser = serial.Serial(self.ports[self.comboBox.currentIndex()][0],9600,timeout=None)
+            ser = serial.Serial(self.ports[self.comboBox.currentIndex()][0],115200,timeout=None)
             mc.uC = ser
             debug_window.debug_output("connected to the arduino")
             self.time_to_close()

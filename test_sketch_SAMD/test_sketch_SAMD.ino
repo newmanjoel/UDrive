@@ -4,25 +4,30 @@
 #define DATAOUT 11  //MOSI
 #define DATAIN  12  //MISO
 #define SPICLOCK  13  //SCK
-#define SLAVESELECT 10  //SS
-#define RESET 9
-#define SLEEP 8
+#define SLAVESELECT 8  //SS
+#define RESET 4
+#define SLEEP 5
 
 #define AOUT1 2
 #define AOUT2 3
-#define BOUT1 4
-#define BOUT2 5
+#define BOUT1 6
+#define BOUT2 7
 
-#define ENCODERA 6
-#define ENCODERB 7
+#define ENCODERA A0
+#define ENCODERB A1
+#define ENCODERC A2
+#define ENCODERD A3
 
 bool reset_pin = false;
 bool sleep_pin = true;
+bool send_stuff = false;
 
 bool stringComplete = false;
 String toSend = "";
 unsigned long time;
 unsigned long motor_time;
+
+String sendOut = "";
 
 Motor m1;
 Motor m2;
@@ -30,19 +35,22 @@ DRV8704 mc;
 // DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
 
 void setup() {
-  SerialUSB.begin(9600); // Initialize Serial Monitor USB
-  Serial1.begin(9600); // Initialize hardware serial port, pins 0/1
+  SerialUSB.begin(115200); // Initialize Serial Monitor USB
+  Serial1.begin(11520); // Initialize hardware serial port, pins 0/1
   // Must have both lines!
   while (!SerialUSB) ; // Wait for Serial monitor to open
   // Send a welcome message to the serial monitor:
 
   m1.begin(AOUT1, AOUT2, ENCODERA, ENCODERB);
-  m2.begin(BOUT1, BOUT2, -1, -1);
+  m2.begin(BOUT1, BOUT2, ENCODERC, ENCODERD);
   mc.begin(SLAVESELECT);
   mc.set_enable(true);// untested
 
   attachInterrupt(digitalPinToInterrupt(ENCODERA), isr_m1_a, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODERB), isr_m1_b, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODERC), isr_m2_a, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(ENCODERD), isr_m2_b, CHANGE);
+
   motor_time = time = millis();
   m1.EnablePID();
   m1.SetSetpoint(0);
@@ -62,38 +70,70 @@ void isr_m1_a() {
 void isr_m1_b() {
   m1.isrB();
 }
+void isr_m2_a() {
+  m2.isrA();
+}
+void isr_m2_b() {
+  m2.isrB();
+}
+
+char *dtostrf (double val, signed char width, unsigned char prec, char *sout) {
+  // https://forum.arduino.cc/index.php?topic=349764.0
+  uint32_t iPart = (uint32_t)val;
+  uint32_t dPart = (uint32_t)((val - (double)iPart) * pow(10, prec));
+
+  sprintf(sout, "%d.%d", iPart, dPart);
+  return sout;
+}
+
 void send_info_over_usb() {
-  if (millis() - time > 100) {
-    double offset = 0;
-    double voltage = (double) analogRead(A0);
-    double m1_current = voltage * 3.3 / 1000 - offset;
+  if (send_stuff) {
+    char total_buffer[100];
+    char m1_input_buffer[16];
+    char m1_setpoint_buffer[16];
+    char m1_output_buffer[16];
+    char m2_input_buffer[16];
+    char m2_setpoint_buffer[16];
+    char m2_output_buffer[16];
 
-    SerialUSB.print(m1.GetRawInput());
-    SerialUSB.print(",");
-    SerialUSB.print(m1.GetSetpoint());
-    SerialUSB.print(",");
-    SerialUSB.print(m1.GetOutput());
-    SerialUSB.print(",");
-    SerialUSB.print(m1_current);
-    SerialUSB.print(",");
-    SerialUSB.print(m2.GetRawInput());
-    SerialUSB.print(",");
-    SerialUSB.print(m2.GetSetpoint());
-    SerialUSB.print(",");
-    SerialUSB.print(m2.GetOutput());
-    SerialUSB.print(",");
-    SerialUSB.println(m1_current);
+    dtostrf(m1.GetLastInput(), 8, 3, m1_input_buffer);
+    dtostrf(m1.GetSetpoint(), 8, 3, m1_setpoint_buffer);
+    dtostrf(m1.GetOutput(), 8, 3, m1_output_buffer);
+
+    dtostrf(m2.GetLastInput(), 8, 3, m2_input_buffer);
+    dtostrf(m2.GetSetpoint(), 8, 3, m2_setpoint_buffer);
+    dtostrf(m2.GetOutput(), 8, 3, m2_output_buffer);
+
+    sprintf(total_buffer,
+            "%s, %s, %s, %s, %s, %s, ",
+            m1_input_buffer,
+            m1_setpoint_buffer,
+            m1_output_buffer,
+            m2_input_buffer,
+            m2_setpoint_buffer,
+            m2_output_buffer);
+
+    SerialUSB.print(String(total_buffer) + sendOut);
+    sendOut = "\n";
+    send_stuff = false;
+    /*
+      SerialUSB.print(m1.GetRawInput());
+      SerialUSB.print(",");
+      SerialUSB.print(m1.GetSetpoint());
+      SerialUSB.print(",");
+      SerialUSB.print(m1.GetOutput());
+      SerialUSB.print(",");
+      SerialUSB.print(m2.GetRawInput());
+      SerialUSB.print(",");
+      SerialUSB.print(m2.GetSetpoint());
+      SerialUSB.print(",");
+      SerialUSB.println(m2.GetOutput());
+    */
     //mc.read_status();
-
-    time = millis();
   }
 }
 
 void loop() {
-  if (stringComplete) {
-    SerialUSB.println("Sending " + toSend + " to Serial");
-    stringComplete = false;
-  }
   serialEvent();
 
   m1.Update();
@@ -103,8 +143,42 @@ void loop() {
 
 }
 
+void set_m1(char mode, double value) {
+  switch (mode) {
+    case 'M':
+      m1.Manual(value);
+      break;
+    case 'V':
+      m1.SetSetpoint(value);
+      m1.EnablePID();
+      break;
+    case 'T':
+      m1.Position(value);
+      m1.EnablePID();
+      break;
+  };
+}
+
+void set_m2(char mode, double value) {
+  switch (mode) {
+    case 'M':
+      m2.Manual(value);
+      break;
+    case 'V':
+      m2.SetSetpoint(value);
+      m2.EnablePID();
+      break;
+    case 'T':
+      m2.Position(value);
+      m2.EnablePID();
+      break;
+  };
+}
+
 void serialEvent() {
   static int speed;
+  static String first_string;
+  static String second_string;
 
   if (SerialUSB.available()) { // If data is sent to the monitor
     toSend = ""; // Create a new string
@@ -113,89 +187,89 @@ void serialEvent() {
       toSend += (char)SerialUSB.read();
     }
     stringComplete = true;
-    String first = toSend.substring(0, 1);
-    if (first.equals("V")) {
-      m1._position = false;
-      int first_comma = toSend.indexOf(',', 1);
-      int second_comma = toSend.indexOf(',', first_comma + 1);
-      m1.SetSetpoint(toSend.substring(1, first_comma).toFloat());
-      m1.EnablePID();
-      m2.SetSetpoint(toSend.substring(first_comma + 1, second_comma).toFloat());
-      m2.EnablePID();
+    int seperator = toSend.indexOf(';');
+    if (seperator > 0) {
+      first_string = toSend.substring(0, seperator);
+      second_string = toSend.substring(seperator + 1);
     }
-    else if (first.equals("P")) {
-      int first_comma = toSend.indexOf(',', 1);
-      int second_comma = toSend.indexOf(',', first_comma + 1);
-      double kp = (double) toSend.substring(1, first_comma).toFloat();
-      double ki = (double) toSend.substring(first_comma + 1, second_comma).toFloat();
-      double kd = (double) toSend.substring(second_comma + 1).toFloat();
+    else {
+      first_string = toSend;
+      second_string = "";
+    }
+    if (first_string.startsWith("V1")) { // velocity
+      int first_comma = first_string.indexOf(',', 2);
+      set_m1('V', first_string.substring(2, first_comma).toFloat());
+    }
+    if (second_string.startsWith("V2")) { // velocity
+      int first_comma = second_string.indexOf(',', 2);
+      set_m2('V', second_string.substring(2, first_comma).toFloat());
+    }
+    if (first_string.startsWith("P1")) { // PID
+      int first_comma = first_string.indexOf(',', 2);
+      int second_comma = first_string.indexOf(',', first_comma + 1);
+      double kp = (double) first_string.substring(2, first_comma).toFloat();
+      double ki = (double) first_string.substring(first_comma + 1, second_comma).toFloat();
+      double kd = (double) first_string.substring(second_comma + 1).toFloat();
       m1.SetPIDGains(kp, ki, kd);
     }
-    else if (first.equals("M")) {
-      int first_comma = toSend.indexOf(',', 1);
-      int second_comma = toSend.indexOf(',', first_comma + 1);
-      double manual_speed_1 = (double) toSend.substring(1, first_comma).toFloat();
-      double manual_speed_2 = (double) toSend.substring(first_comma + 1, second_comma).toFloat();
-      m1.Manual(manual_speed_1);
-      m2.Manual(manual_speed_2);
-      m1._position = false;
+    if (second_string.startsWith("P2")) { // PID
+      int first_comma = second_string.indexOf(',', 2);
+      int second_comma = second_string.indexOf(',', first_comma + 1);
+      double kp = (double) second_string.substring(2, first_comma).toFloat();
+      double ki = (double) second_string.substring(first_comma + 1, second_comma).toFloat();
+      double kd = (double) second_string.substring(second_comma + 1).toFloat();
+      m2.SetPIDGains(kp, ki, kd);
     }
-    else if (first.equals("E")) {
-      bool local_enable = false;
-      local_enable = (bool) toSend.substring(1, 2);
-      if (local_enable) {
-        m1.EnablePID();
-        m2.EnablePID();
-      }
-      else {
-        m1.DisablePID();
-        m2.DisablePID();
-      }
+    if (first_string.startsWith("M1")) { // manual duty cycle
+      int first_comma = first_string.indexOf(',', 2);
+      set_m1('M', first_string.substring(2, first_comma).toFloat());
     }
-    else if (first.equals("W")) {
-      m1.SetWheelSize((double) toSend.substring(1).toFloat());
-      m2.SetWheelSize(m1.GetWheelSize());
+    if (second_string.startsWith("M2")) { // manual duty cycle
+      int first_comma = second_string.indexOf(',', 2);
+      set_m2('M', second_string.substring(2, first_comma).toFloat());
     }
-    else if (first.equals("T")) {
-      // set the position that you want to go to (go To)
-      m1._position = true;
-      m1.EnablePID();
-      m2.EnablePID();
-
+    //else if (first_string.equals("W")) {
+    //  m1.SetWheelSize((double) toSend.substring(1).toFloat());
+    //  m2.SetWheelSize(m1.GetWheelSize());
+    //}
+    if (first_string.startsWith("T1")) {  // set the position that you want to go to (go To)
+      int first_comma = first_string.indexOf(',', 2);
+      set_m1('T', first_string.substring(2, first_comma).toFloat());
     }
-    else if (first.equals("A")) {
-      // set the max acceleration
+    if (second_string.startsWith("T2")) {  // set the position that you want to go to (go To)
+      int first_comma = second_string.indexOf(',', 2);
+      set_m2('T', second_string.substring(2, first_comma).toFloat());
     }
-    else if(first.equals("Q")){
+    if (first_string.startsWith("Q")) {
       // read the motor driver settings
       mc.read_status();
       DRV8704_Settings _settings = mc.get_settings();
-      
-      SerialUSB.print("SETTINGS:");
-      SerialUSB.println(_settings.status.overtemp_shutdown);
-      /*SerialUSB.print(",");
-      SerialUSB.print(_settings.status.channel_A_overcurrent_protection);
-      SerialUSB.print(",");
-      SerialUSB.print(_settings.status.channel_B_overcurrent_protection);
-      SerialUSB.print(",");
-      SerialUSB.print(_settings.status.channel_A_predriver_fault);
-      SerialUSB.print(",");
-      SerialUSB.print(_settings.status.channel_B_predriver_fault);
-      SerialUSB.print(",");
-      SerialUSB.println(_settings.status.undervoltage_lockout);*/
-      
+      sendOut = "Settings: ";
+      sendOut += String(_settings.status.overtemp_shutdown);
+      sendOut += ",";
+      sendOut += String(_settings.status.channel_A_overcurrent_protection);
+      sendOut += ",";
+      sendOut += String(_settings.status.channel_B_overcurrent_protection);
+      sendOut += ",";
+      sendOut += String(_settings.status.channel_A_predriver_fault);
+      sendOut += ",";
+      sendOut += String(_settings.status.channel_B_predriver_fault);
+      sendOut += ",";
+      sendOut += String(_settings.status.undervoltage_lockout);
+      sendOut += "\n";
     }
-    else if (first.equals("R")) {
-      // toggle the reset pin
+    if (first_string.equals("R")) { // toggle the reset pin
       reset_pin = !reset_pin;
       digitalWrite(RESET, reset_pin);
     }
-    else if ( first.equals("S")) {
-      // toggle the sleep pin
+    if (first_string.equals("S")) {// toggle the sleep pin
       sleep_pin = !sleep_pin;
       digitalWrite(SLEEP, sleep_pin);
     }
-    else if ( first.equals("D")) {
+    if (first_string.equals("~")) {
+      send_stuff = true;
+    }
+    if (first_string.startsWith("D")) {
       // set the settings for the DRV8704
       // have 14 values in total
       DRV8704_Settings new_settings = mc.get_settings();
@@ -376,7 +450,7 @@ void serialEvent() {
           new_settings.gate_drive_peak_source_current = IDRIVEP_Values::DRIVE_SOURCE_CURRENT_200_mA;
           break;
       };
-      
+
       new_settings.torque = torque;
 
       mc.set_settings(new_settings);
