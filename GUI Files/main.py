@@ -344,12 +344,12 @@ class MainScreen(QtGui.QMainWindow):
         global m1_data, m2_data
 
         if "S" in s:
-            print "settings: |{}|".format(s)
+            print( "settings: |{}|".format(s))
 
         try:
             split_csv = s.split(",")
             if len(split_csv) < 6:
-                print "length is not 6: |{}|  {}".format(s, split_csv)
+                print ("length is not 6: |{}|  {}".format(s, split_csv))
             else:
                 try:
                     for i in range(6):
@@ -357,7 +357,7 @@ class MainScreen(QtGui.QMainWindow):
                             split_csv[i] =  split_csv[i].partition(".-")[0]
                         split_csv[i] = float(split_csv[i])
                 except Exception:
-                    print "ERROR IN READING THE SPLIT CSV: |{}|  {}".format(s, split_csv)
+                    print ("ERROR IN READING THE SPLIT CSV: |{}|  {}".format(s, split_csv))
                     return
                 if(len(m1_data['input']) < data_size):
                     m1_data['input'] = np.append(m1_data['input'], split_csv[0])
@@ -445,6 +445,6 @@ try:
 finally:
     if(mc.uC is not None):
         mc.uC.close()
-        print colored("arduino closed", 'magenta')
+        print (colored("arduino closed", 'magenta'))
     else:
-        print colored("no arduino connected", "magenta")
+        print (colored("no arduino connected", "magenta"))

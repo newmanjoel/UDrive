@@ -1,6 +1,12 @@
 #include "motor_controller.h"
 #include "DRV8704.h"
 
+/*  ----------------- Pin Definitions --------------------------------------
+  This is where the pins are defined on the microcontroller
+
+  Pinout used: https://cdn.sparkfun.com/assets/learn_tutorials/4/5/4/graphicalDatasheet-Mini.pdf
+  using the arduino pin definitions
+ */
 #define DATAOUT 11  //MOSI
 #define DATAIN  12  //MISO
 #define SPICLOCK  13  //SCK
@@ -18,6 +24,12 @@
 #define ENCODERC A2
 #define ENCODERD A3
 
+/*    ---------------------- Defining the global variables ---------------------
+  This is where some of the global variables and objects are definded.
+
+  Note that they are occuring before the setup function so they need the (dot)begin
+*/
+
 bool reset_pin = false;
 bool sleep_pin = true;
 bool send_stuff = false;
@@ -32,38 +44,52 @@ String sendOut = "";
 Motor m1;
 Motor m2;
 DRV8704 mc;
-// DRV8704_Settings mc_settings; // in the future for more testing this will need to be changed
+
 
 void setup() {
   SerialUSB.begin(115200); // Initialize Serial Monitor USB
   Serial1.begin(11520); // Initialize hardware serial port, pins 0/1
-  // Must have both lines!
-  while (!SerialUSB) ; // Wait for Serial monitor to open
-  // Send a welcome message to the serial monitor:
 
+  // ---------- IMPORTANT --------------
+  // This while loop will stop the unit from spinning up with no computer attached
+  // Wait for Serial monitor to open
+  // Must have both lines!
+  while (!SerialUSB) ;
+
+  // Start all of the motors and make sure they are pointing at the right pins
   m1.begin(AOUT1, AOUT2, ENCODERA, ENCODERB);
   m2.begin(BOUT1, BOUT2, ENCODERC, ENCODERD);
   mc.begin(SLAVESELECT);
   mc.set_enable(true);// untested
 
+  // Make sure that the encoders are going to be captured correctly
   attachInterrupt(digitalPinToInterrupt(ENCODERA), isr_m1_a, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODERB), isr_m1_b, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODERC), isr_m2_a, CHANGE);
   attachInterrupt(digitalPinToInterrupt(ENCODERD), isr_m2_b, CHANGE);
 
+  // This time is no longer used should be safe to remove it
   motor_time = time = millis();
+
+  // Start the PID in velocity mode and set the velocity to zero.
+  // Essentially this just lets us hear the hiss of the motors being active
   m1.EnablePID();
   m1.SetSetpoint(0);
   m2.EnablePID();
   m2.SetSetpoint(0);
+  // Make sure all the control pins are changed to allow the driver chip to run
   pinMode(RESET, OUTPUT);
   digitalWrite(RESET, reset_pin); // this is the reset pin
   pinMode(SLEEP, OUTPUT);
-  digitalWrite(SLEEP, sleep_pin); // this is the sleep pin // leave this pin alone
+  digitalWrite(SLEEP, sleep_pin); // this is the sleep pin
   pinMode(SLAVESELECT, OUTPUT);
   delay(10);
 }
 
+/* ----------------- Defining Interrupt Functions
+ This section will run porly and is just done because it keeps everything in the motor controller objct nicely.
+ This could easily be made to run faster if things start to slow down
+*/
 void isr_m1_a() {
   m1.isrA();
 }
@@ -77,6 +103,8 @@ void isr_m2_b() {
   m2.isrB();
 }
 
+// Utility function that forces a fixed percision string from a double
+// This is useful for printing back to the console with a fixed amount of decimal places
 char *dtostrf (double val, signed char width, unsigned char prec, char *sout) {
   // https://forum.arduino.cc/index.php?topic=349764.0
   uint32_t iPart = (uint32_t)val;
@@ -86,8 +114,13 @@ char *dtostrf (double val, signed char width, unsigned char prec, char *sout) {
   return sout;
 }
 
+// Reporting back what the current input,setpoint, and output values are
+// To request the data send_stuff has to be high
+// To set send_stuff high a "~" command has to be sent over usb
 void send_info_over_usb() {
   if (send_stuff) {
+    // setup all the buffers so that we can have double to string with fixed percision
+    // These should probably be changed to static for a speed boost and just clear them every time
     char total_buffer[100];
     char m1_input_buffer[16];
     char m1_setpoint_buffer[16];
@@ -96,6 +129,7 @@ void send_info_over_usb() {
     char m2_setpoint_buffer[16];
     char m2_output_buffer[16];
 
+    // convert the values into fixed decimal place strings
     dtostrf(m1.GetLastInput(), 8, 3, m1_input_buffer);
     dtostrf(m1.GetSetpoint(), 8, 3, m1_setpoint_buffer);
     dtostrf(m1.GetOutput(), 8, 3, m1_output_buffer);
@@ -104,6 +138,7 @@ void send_info_over_usb() {
     dtostrf(m2.GetSetpoint(), 8, 3, m2_setpoint_buffer);
     dtostrf(m2.GetOutput(), 8, 3, m2_output_buffer);
 
+    // then put them into a larger buffer
     sprintf(total_buffer,
             "%s, %s, %s, %s, %s, %s, ",
             m1_input_buffer,
@@ -113,26 +148,17 @@ void send_info_over_usb() {
             m2_setpoint_buffer,
             m2_output_buffer);
 
+    // Then send the long string over usb with a new line
+    // Unknown reason why I declared sendOut after I use it and not just use a const
     SerialUSB.print(String(total_buffer) + sendOut);
     sendOut = "\n";
+
+    // only send it once per request
     send_stuff = false;
-    /*
-      SerialUSB.print(m1.GetRawInput());
-      SerialUSB.print(",");
-      SerialUSB.print(m1.GetSetpoint());
-      SerialUSB.print(",");
-      SerialUSB.print(m1.GetOutput());
-      SerialUSB.print(",");
-      SerialUSB.print(m2.GetRawInput());
-      SerialUSB.print(",");
-      SerialUSB.print(m2.GetSetpoint());
-      SerialUSB.print(",");
-      SerialUSB.println(m2.GetOutput());
-    */
-    //mc.read_status();
   }
 }
 
+// This is the main loop, Kinda boring really
 void loop() {
   serialEvent();
 
@@ -142,7 +168,8 @@ void loop() {
   send_info_over_usb();
 
 }
-
+// Set the values assosiated with motor 1
+// TODO: move this to inside the object so its more universal
 void set_m1(char mode, double value) {
   switch (mode) {
     case 'M':
@@ -159,6 +186,8 @@ void set_m1(char mode, double value) {
   };
 }
 
+// Set the values assosiated with motor 2
+// TODO: move this to inside the object so its more universal
 void set_m2(char mode, double value) {
   switch (mode) {
     case 'M':
@@ -175,6 +204,7 @@ void set_m2(char mode, double value) {
   };
 }
 
+// This is where all of the input parsing happens
 void serialEvent() {
   static int speed;
   static String first_string;
@@ -459,8 +489,3 @@ void serialEvent() {
 
   }
 }
-
-
-
-
-
